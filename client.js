@@ -6,7 +6,6 @@ window.TrelloPowerUp.initialize({
   'card-buttons': function (t, options) {
     console.log('card-buttons carregado');
     return [{
-      icon: window.BRPROJECT_BASE_URL + '/images/project.png',
       text: 'BRProject',
       callback: function (t) {
         return t.popup({
