@@ -3,7 +3,7 @@
   "description": "BRProject - Trello",
   "author": "BRSIS",
   "icon": {
-    "url": "https://ccd91652301f.ngrok-free.app/brproject/artefatos/brproject-powerup/images/project.png"
+    "url": "https://brproject.vercel.app/images/project.png"
   },
   "capabilities": [
     "board-buttons",
@@ -11,5 +11,5 @@
     "show-settings"
   ],
   "connectors": {},
-  "iframeConnectorUrl": "https://ccd91652301f.ngrok-free.app/brproject/artefatos/brproject-powerup/index.html"
+  "iframeConnectorUrl": "https://brproject.vercel.app/index.html"
 }
