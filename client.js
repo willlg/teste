@@ -1,5 +1,4 @@
 //var t = window.TrelloPowerUp.iframe();
-window.BRPROJECT_BASE_URL = 'https://brproject.vercel.app';
 console.log('client.js carregado') 
 
 window.TrelloPowerUp.initialize({
