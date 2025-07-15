@@ -1,1 +1,0 @@
-window.BRPROJECT_BASE_URL = 'https://ccd91652301f.ngrok-free.app/brproject/artefatos/brproject-powerup';
