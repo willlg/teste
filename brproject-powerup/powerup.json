@@ -6,7 +6,6 @@
     "url": "https://ccd91652301f.ngrok-free.app/brproject/artefatos/brproject-powerup/images/project.png"
   },
   "capabilities": [
-    "board-buttons",
     "card-buttons",
     "show-settings"
   ],
