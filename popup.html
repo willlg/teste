@@ -85,38 +85,45 @@
 
 
     $(async function() {
-      var brproject = new Brproject();
-      var cardId = getCardId();
 
-      let { token, url, usuario } = await getUserData();
-      brproject.token = token;
-      brproject.url = url;
+      console.log('[DEBUG] Antes do new Brproject');
+      try {
+        var brproject = new Brproject();
+        console.log('[DEBUG] Depois do new Brproject');
+        var cardId = getCardId();
 
-      let logado = !!token && !!url;
-      let tarefaEmAndamento = false;
-      let tarefaDetalhe = {};
-      let feedback = null;
+        let { token, url, usuario } = await getUserData();
+        brproject.token = token;
+        brproject.url = url;
 
-      console.log('[DEBUG] Estado inicial:', { token, url, usuario, logado, cardId });
+        let logado = !!token && !!url;
+        let tarefaEmAndamento = false;
+        let tarefaDetalhe = {};
+        let feedback = null;
 
-      if (logado && cardId) {
-        await brproject.getUltimaTarefa({
-          success: function(data) {
-            console.log('[DEBUG] getUltimaTarefa:', data);
-            if (data.success && data.data.atividade.finalizada != 1 && data.data.atividade.tarefa.referencia_id == cardId) {
-              tarefaEmAndamento = true;
-              tarefaDetalhe = {
-                nome: data.data.atividade.tarefa.nome,
-                descricao: data.data.atividade.tarefa.descricao,
-                data_inicio: data.data.atividade.data_inicio
-              };
+        console.log('[DEBUG] Estado inicial:', { token, url, usuario, logado, cardId });
+
+        if (logado && cardId) {
+          await brproject.getUltimaTarefa({
+            success: function(data) {
+              console.log('[DEBUG] getUltimaTarefa:', data);
+              if (data.success && data.data.atividade.finalizada != 1 && data.data.atividade.tarefa.referencia_id == cardId) {
+                tarefaEmAndamento = true;
+                tarefaDetalhe = {
+                  nome: data.data.atividade.tarefa.nome,
+                  descricao: data.data.atividade.tarefa.descricao,
+                  data_inicio: data.data.atividade.data_inicio
+                };
+              }
             }
-          }
-        });
-      }
+          });
+        }
 
-      console.log('[DEBUG] Antes do renderUI:', { logado, tarefaEmAndamento, usuario, tarefaDetalhe });
-      renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe });
+        console.log('[DEBUG] Antes do renderUI:', { logado, tarefaEmAndamento, usuario, tarefaDetalhe });
+        renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe });
+      } catch (e) {
+        console.log('[DEBUG] Erro no bloco principal:', e);
+      }
 
       // Login
       $('#brproject-root').on('click', '#btn-login', function() {
