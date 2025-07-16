@@ -76,6 +76,7 @@
       `);
     }
 
+
     $(async function() {
       var brproject = new Brproject();
       var cardId = getCardId();
@@ -89,9 +90,12 @@
       let tarefaDetalhe = {};
       let feedback = null;
 
+      console.log('[DEBUG] Estado inicial:', { token, url, usuario, logado, cardId });
+
       if (logado && cardId) {
         await brproject.getUltimaTarefa({
           success: function(data) {
+            console.log('[DEBUG] getUltimaTarefa:', data);
             if (data.success && data.data.atividade.finalizada != 1 && data.data.atividade.tarefa.referencia_id == cardId) {
               tarefaEmAndamento = true;
               tarefaDetalhe = {
@@ -104,6 +108,7 @@
         });
       }
 
+      console.log('[DEBUG] Antes do renderUI:', { logado, tarefaEmAndamento, usuario, tarefaDetalhe });
       renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe });
 
       // Login
