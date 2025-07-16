@@ -6,13 +6,14 @@
   <link rel="stylesheet" href="https://brproject.vercel.app/css/brproject.css">
 </head>
 <body>
-  <div id="brproject-root"></div>
+  <div id="brproject-root">[DEBUG] popup carregado</div>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <script src="config.js"></script>
   <script src="vendor/jquery.min.js"></script>
   <script src="vendor/md5.js"></script>
   <script src="brproject.js"></script>
   <script>
+    console.log('[DEBUG] JS popup rodando');
     var t = window.TrelloPowerUp.iframe();
 
     async function getUserData() {
