@@ -10,9 +10,16 @@
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <script src="config.js"></script>
   <script src="vendor/jquery.min.js"></script>
+<script>
+  console.log('[DEBUG] jQuery:', typeof $);
+  window.onerror = function(msg, url, line, col, error) {
+    console.log('[DEBUG] window.onerror:', msg, url, line, col, error);
+  };
+</script>
   <script src="vendor/md5.js"></script>
   <script src="brproject.js"></script>
   <script>
+  console.log('[DEBUG] Brproject:', typeof Brproject);
     console.log('[DEBUG] JS popup rodando');
     var t = window.TrelloPowerUp.iframe();
 
