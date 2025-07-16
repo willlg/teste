@@ -6,219 +6,425 @@
   <link rel="stylesheet" href="https://brproject.vercel.app/css/brproject.css">
 </head>
 <body>
-  <div id="brproject-root"></div>
+  <div id="brproject-root">Carregando...</div>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
-  <script src="https://brproject.vercel.app/config.js"></script>
-  <script src="https://brproject.vercel.app/vendor/jquery.min.js"></script>
-<script src="https://brproject.vercel.app/vendor/md5.js"></script>
-<script src="https://brproject.vercel.app/brproject.js"></script>
-<script>
-  console.log('[DEBUG] jQuery:', typeof $);
-  console.log('[DEBUG] Brproject:', typeof Brproject);
-  window.onerror = function(msg, url, line, col, error) {
-    console.log('[DEBUG] window.onerror:', msg, url, line, col, error);
-  };
-
-  let t;
-  try {
-    console.log('[DEBUG] Antes do TrelloPowerUp.iframe');
-    t = window.TrelloPowerUp.iframe();
-    console.log('[DEBUG] Depois do TrelloPowerUp.iframe');
-  } catch (e) {
-    console.log('[DEBUG] Erro ao chamar TrelloPowerUp.iframe:', e);
-  }
-
-  async function getUserData() {
-    return {
-      token: await t.get('member', 'private', 'brproject-token'),
-      url: await t.get('member', 'private', 'brproject-url'),
-      usuario: await t.get('member', 'private', 'brproject-usuario')
+  <script src="config.js"></script>
+  <script src="vendor/jquery.min.js"></script>
+  <script src="vendor/md5.js"></script>
+  <script src="brproject.js"></script>
+  <script>
+    console.log('[DEBUG] jQuery:', typeof $);
+    console.log('[DEBUG] Brproject:', typeof Brproject);
+    
+    window.onerror = function(msg, url, line, col, error) {
+      console.log('[DEBUG] window.onerror:', msg, url, line, col, error);
     };
-  }
-  async function setUserData(token, url, usuario) {
-    await t.set('member', 'private', 'brproject-token', token);
-    await t.set('member', 'private', 'brproject-url', url);
-    await t.set('member', 'private', 'brproject-usuario', usuario);
-  }
-  async function clearUserData() {
-    await t.remove('member', 'private', 'brproject-token');
-    await t.remove('member', 'private', 'brproject-url');
-    await t.remove('member', 'private', 'brproject-usuario');
-  }
 
-  function getCardId() {
-    return t.arg('card') && t.arg('card').id;
-  }
+    let t;
+    
+    // Aguarda o DOM estar pronto
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('[DEBUG] DOM Ready');
+      initializePowerUp();
+    });
 
-  // Renderização dinâmica da interface
-  function renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe, feedback }) {
-    let html = '';
-    if (feedback) {
-      html += `<div style="color:${feedback.type === 'error' ? 'red' : 'green'};margin-bottom:8px;">${feedback.msg}</div>`;
+    function initializePowerUp() {
+      try {
+        console.log('[DEBUG] Antes do TrelloPowerUp.iframe');
+        t = window.TrelloPowerUp.iframe();
+        console.log('[DEBUG] Depois do TrelloPowerUp.iframe, t:', t);
+        
+        // Aguarda o Trello estar pronto
+        t.render(function() {
+          console.log('[DEBUG] Trello render callback executado');
+          initializeApp();
+        });
+        
+      } catch (e) {
+        console.log('[DEBUG] Erro ao chamar TrelloPowerUp.iframe:', e);
+        // Fallback: tenta inicializar mesmo com erro
+        setTimeout(initializeApp, 1000);
+      }
     }
-    if (!logado) {
-      html += `<button id="btn-login" class="brproject-login-button">Login no BRProject</button>`;
-    } else if (!tarefaEmAndamento) {
-      html += `
-        <div style="margin-bottom:10px;">Olá, ${usuario && usuario.email ? usuario.email : ''} <button id="btn-logout" class="brproject-logout-button" style="float:right;">Sair</button></div>
-        <button id="btn-iniciar" class="brproject-player-iniciar">Iniciar</button>
-      `;
-    } else {
-      html += `
-        <div style="margin-bottom:10px;">Olá, ${usuario && usuario.email ? usuario.email : ''} <button id="btn-logout" class="brproject-logout-button" style="float:right;">Sair</button></div>
-        <div style="background:#e8f5e9;padding:10px;border-radius:5px;margin-bottom:10px;">
-          <b>Em execução:</b><br>
-          <b>Tarefa:</b> ${tarefaDetalhe.nome || ''}<br>
-          <b>Descrição:</b> ${tarefaDetalhe.descricao || ''}<br>
-          <b>Início:</b> ${tarefaDetalhe.data_inicio || ''}<br>
-        </div>
-        <button id="btn-parar" class="brproject-player-pausar">Parar</button>
-      `;
+
+    async function getUserData() {
+      try {
+        if (!t) {
+          console.log('[DEBUG] t não disponível em getUserData');
+          return { token: null, url: null, usuario: null };
+        }
+        
+        const token = await t.get('member', 'private', 'brproject-token');
+        const url = await t.get('member', 'private', 'brproject-url');
+        const usuario = await t.get('member', 'private', 'brproject-usuario');
+        
+        return { token, url, usuario };
+      } catch (e) {
+        console.log('[DEBUG] Erro em getUserData:', e);
+        return { token: null, url: null, usuario: null };
+      }
     }
-    $('#brproject-root').html(html);
-  }
 
-  // Modal de confirmação de logout inline
-  function renderLogoutConfirm(usuario) {
-    $('#brproject-root').html(`
-      <div style="margin-bottom:10px;">Olá, ${usuario && usuario.email ? usuario.email : ''}</div>
-      <div style="margin-bottom:10px;">Tem certeza que deseja sair do BRProject?</div>
-      <button id="btn-logout-sim" style="background:#d32f2f;color:#fff;margin-right:10px;">Sim</button>
-      <button id="btn-logout-nao">Não</button>
-    `);
-  }
+    async function setUserData(token, url, usuario) {
+      try {
+        if (!t) {
+          console.log('[DEBUG] t não disponível em setUserData');
+          return;
+        }
+        
+        await t.set('member', 'private', 'brproject-token', token);
+        await t.set('member', 'private', 'brproject-url', url);
+        await t.set('member', 'private', 'brproject-usuario', usuario);
+      } catch (e) {
+        console.log('[DEBUG] Erro em setUserData:', e);
+      }
+    }
 
-  (async function() {
-    console.log('[DEBUG] Antes do new Brproject');
-    try {
-      var brproject = new Brproject();
-      console.log('[DEBUG] Depois do new Brproject');
-      var cardId = getCardId();
+    async function clearUserData() {
+      try {
+        if (!t) {
+          console.log('[DEBUG] t não disponível em clearUserData');
+          return;
+        }
+        
+        await t.remove('member', 'private', 'brproject-token');
+        await t.remove('member', 'private', 'brproject-url');
+        await t.remove('member', 'private', 'brproject-usuario');
+      } catch (e) {
+        console.log('[DEBUG] Erro em clearUserData:', e);
+      }
+    }
 
-      let { token, url, usuario } = await getUserData();
-      brproject.token = token;
-      brproject.url = url;
+    function getCardId() {
+      try {
+        if (!t) {
+          console.log('[DEBUG] t não disponível em getCardId');
+          return null;
+        }
+        const card = t.arg('card');
+        const cardId = card && card.id;
+        console.log('[DEBUG] Card ID:', cardId);
+        return cardId;
+      } catch (e) {
+        console.log('[DEBUG] Erro em getCardId:', e);
+        return null;
+      }
+    }
 
-      let logado = !!token && !!url;
-      let tarefaEmAndamento = false;
-      let tarefaDetalhe = {};
-      let feedback = null;
+    // Renderização dinâmica da interface
+    function renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe, feedback }) {
+      console.log('[DEBUG] renderUI chamado:', { logado, tarefaEmAndamento, usuario, tarefaDetalhe, feedback });
+      
+      let html = '';
+      if (feedback) {
+        html += `<div style="color:${feedback.type === 'error' ? 'red' : 'green'};margin-bottom:8px;">${feedback.msg}</div>`;
+      }
+      if (!logado) {
+        html += `<button id="btn-login" class="brproject-login-button">Login no BRProject</button>`;
+      } else if (!tarefaEmAndamento) {
+        html += `
+          <div style="margin-bottom:10px;">Olá, ${usuario && usuario.email ? usuario.email : ''} <button id="btn-logout" class="brproject-logout-button" style="float:right;">Sair</button></div>
+          <button id="btn-iniciar" class="brproject-player-iniciar">Iniciar</button>
+        `;
+      } else {
+        html += `
+          <div style="margin-bottom:10px;">Olá, ${usuario && usuario.email ? usuario.email : ''} <button id="btn-logout" class="brproject-logout-button" style="float:right;">Sair</button></div>
+          <div style="background:#e8f5e9;padding:10px;border-radius:5px;margin-bottom:10px;">
+            <b>Em execução:</b><br>
+            <b>Tarefa:</b> ${tarefaDetalhe.nome || ''}<br>
+            <b>Descrição:</b> ${tarefaDetalhe.descricao || ''}<br>
+            <b>Início:</b> ${tarefaDetalhe.data_inicio || ''}<br>
+          </div>
+          <button id="btn-parar" class="brproject-player-pausar">Parar</button>
+        `;
+      }
+      
+      const root = document.getElementById('brproject-root');
+      if (root) {
+        root.innerHTML = html;
+      } else {
+        console.log('[DEBUG] Elemento brproject-root não encontrado');
+      }
+    }
 
-      console.log('[DEBUG] Estado inicial:', { token, url, usuario, logado, cardId });
+    // Modal de confirmação de logout inline
+    function renderLogoutConfirm(usuario) {
+      const root = document.getElementById('brproject-root');
+      if (root) {
+        root.innerHTML = `
+          <div style="margin-bottom:10px;">Olá, ${usuario && usuario.email ? usuario.email : ''}</div>
+          <div style="margin-bottom:10px;">Tem certeza que deseja sair do BRProject?</div>
+          <button id="btn-logout-sim" style="background:#d32f2f;color:#fff;margin-right:10px;">Sim</button>
+          <button id="btn-logout-nao">Não</button>
+        `;
+      }
+    }
 
-      if (logado && cardId) {
-        await brproject.getUltimaTarefa({
-          success: function(data) {
-            console.log('[DEBUG] getUltimaTarefa:', data);
-            if (data.success && data.data.atividade.finalizada != 1 && data.data.atividade.tarefa.referencia_id == cardId) {
-              tarefaEmAndamento = true;
-              tarefaDetalhe = {
-                nome: data.data.atividade.tarefa.nome,
-                descricao: data.data.atividade.tarefa.descricao,
-                data_inicio: data.data.atividade.data_inicio
-              };
+    async function initializeApp() {
+      console.log('[DEBUG] initializeApp iniciado');
+      
+      try {
+        // Verifica se o Brproject está disponível
+        if (typeof Brproject === 'undefined') {
+          console.log('[DEBUG] Brproject não definido, tentando novamente em 500ms');
+          setTimeout(initializeApp, 500);
+          return;
+        }
+
+        console.log('[DEBUG] Antes do new Brproject');
+        var brproject = new Brproject();
+        console.log('[DEBUG] Depois do new Brproject');
+        
+        var cardId = getCardId();
+        console.log('[DEBUG] Card ID obtido:', cardId);
+
+        let { token, url, usuario } = await getUserData();
+        console.log('[DEBUG] Dados do usuário:', { token: !!token, url: !!url, usuario });
+        
+        brproject.token = token;
+        brproject.url = url;
+
+        let logado = !!token && !!url;
+        let tarefaEmAndamento = false;
+        let tarefaDetalhe = {};
+        let feedback = null;
+
+        console.log('[DEBUG] Estado inicial:', { logado, cardId });
+
+        if (logado && cardId) {
+          console.log('[DEBUG] Verificando última tarefa...');
+          await brproject.getUltimaTarefa({
+            success: function(data) {
+              console.log('[DEBUG] getUltimaTarefa sucesso:', data);
+              if (data.success && data.data.atividade.finalizada != 1 && data.data.atividade.tarefa.referencia_id == cardId) {
+                tarefaEmAndamento = true;
+                tarefaDetalhe = {
+                  nome: data.data.atividade.tarefa.nome,
+                  descricao: data.data.atividade.tarefa.descricao,
+                  data_inicio: data.data.atividade.data_inicio
+                };
+              }
+              console.log('[DEBUG] Renderizando UI após getUltimaTarefa');
+              renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe });
+            },
+            error: function(error) {
+              console.log('[DEBUG] getUltimaTarefa erro:', error);
+              renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe });
             }
-          }
+          });
+        } else {
+          console.log('[DEBUG] Renderizando UI inicial');
+          renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe });
+        }
+
+        // Event listeners
+        setupEventListeners(brproject, cardId);
+        
+      } catch (e) {
+        console.log('[DEBUG] Erro no initializeApp:', e);
+        // Renderiza uma interface básica mesmo com erro
+        renderUI({ 
+          logado: false, 
+          tarefaEmAndamento: false, 
+          usuario: null, 
+          tarefaDetalhe: {}, 
+          feedback: {type:'error', msg:'Erro ao inicializar aplicação'} 
         });
       }
-
-      console.log('[DEBUG] Antes do renderUI:', { logado, tarefaEmAndamento, usuario, tarefaDetalhe });
-      renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe });
-    } catch (e) {
-      console.log('[DEBUG] Erro no bloco principal:', e);
     }
 
-    // Login
-    $('#brproject-root').on('click', '#btn-login', function() {
-      $('#brproject-root').html(`
-        <form id="brproject-form-login">
-          <label>URL</label>
-          <input id="brproject-url" class="url" name="url" value="https://www2.projetos.brsis.com.br/brproject" type="text" autocomplete="off" style="padding:10px; border:1px solid #ccc; border-radius:4px; width:100%;" />
-          <label>E-mail</label>
-          <input id="brproject-email" class="email" name="email" type="email" autocomplete="off" style="padding:10px; border:1px solid #ccc; border-radius:4px; width:100%;" />
-          <label>Senha</label>
-          <input id="brproject-senha" class="senha" name="senha" type="password" autocomplete="off" style="padding:10px; border:1px solid #ccc; border-radius:4px; width:100%;" />
-          <button class="primary js-save-changes" type="submit" style="padding:12px; background-color:#0079bf; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; width:100%; margin-top:10px;">Entrar</button>
-          <p class="error" style="color:red;"></p>
-        </form>
-      `);
-    });
-
-    $('#brproject-root').on('submit', '#brproject-form-login', function(e) {
-      e.preventDefault();
-      var url = $('#brproject-url').val();
-      var email = $('#brproject-email').val();
-      var senha = $('#brproject-senha').val();
-      var data_form = { url, email, senha };
-
-      brproject.gerarToken(data_form, {
-        beforeSend: function() {
-          $('#brproject-form-login .js-save-changes').prop('disabled', true).text('Entrando...');
-          $('#brproject-form-login .error').text('');
-        },
-        success: async function(data) {
-          if (data.success) {
-            await setUserData(data.data.token, url, data.data.usuario);
-            brproject.token = data.data.token;
-            brproject.url = url;
-            usuario = data.data.usuario;
-            renderUI({ logado: true, tarefaEmAndamento: false, usuario, tarefaDetalhe: {} , feedback: {type:'success',msg:'Login realizado com sucesso!'} });
-          } else {
-            $('#brproject-form-login .error').text(data.message || 'Erro ao autenticar');
-          }
-        },
-        error: function() {
-          $('#brproject-form-login .error').text('Erro ao autenticar');
-        },
-        complete: function() {
-          $('#brproject-form-login .js-save-changes').prop('disabled', false).text('Entrar');
-        }
-      });
-    });
-
-    $('#brproject-root').on('click', '#btn-logout', function() {
-      renderLogoutConfirm(usuario);
-    });
-    $('#brproject-root').on('click', '#btn-logout-nao', function() {
-      renderUI({ logado: true, tarefaEmAndamento, usuario, tarefaDetalhe });
-    });
-    $('#brproject-root').on('click', '#btn-logout-sim', async function() {
-      await clearUserData();
-      brproject.token = null;
-      brproject.url = null;
-      renderUI({ logado: false, tarefaEmAndamento: false, usuario: null, tarefaDetalhe: {}, feedback: {type:'success',msg:'Logout realizado com sucesso!'} });
-    });
-
-    $('#brproject-root').on('click', '#btn-iniciar', function() {
-      if (!cardId) {
-        renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe, feedback: {type:'error',msg:'Card não identificado.'} });
+    function setupEventListeners(brproject, cardId) {
+      console.log('[DEBUG] Configurando event listeners');
+      
+      const root = document.getElementById('brproject-root');
+      if (!root) {
+        console.log('[DEBUG] Root não encontrado para event listeners');
         return;
       }
-      var tarefa = { referencia_id: cardId };
-      brproject.iniciarTarefa(tarefa, {
-        success: function(data) {
-          if (data.success) {
-            tarefaDetalhe = {
-              nome: data.data.atividade.tarefa.nome,
-              descricao: data.data.atividade.tarefa.descricao,
-              data_inicio: data.data.atividade.data_inicio
-            };
-            renderUI({ logado: true, tarefaEmAndamento: true, usuario, tarefaDetalhe, feedback: {type:'success',msg:'Tarefa iniciada!'} });
-          } else {
-            renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe, feedback: {type:'error',msg: data.message || 'Erro ao iniciar tarefa'} });
-          }
-        }
-      });
-    });
 
-    $('#brproject-root').on('click', '#btn-parar', function() {
-      brproject.pararTarefa({
-        success: function(data) {
-          renderUI({ logado: true, tarefaEmAndamento: false, usuario, tarefaDetalhe: {}, feedback: {type:'success',msg:'Tarefa parada!'} });
+      // Usando delegação de eventos
+      root.addEventListener('click', async function(e) {
+        const target = e.target;
+        console.log('[DEBUG] Click detectado em:', target.id);
+
+        if (target.id === 'btn-login') {
+          console.log('[DEBUG] Botão login clicado');
+          root.innerHTML = `
+            <form id="brproject-form-login">
+              <label>URL</label>
+              <input id="brproject-url" class="url" name="url" value="https://www2.projetos.brsis.com.br/brproject" type="text" autocomplete="off" style="padding:10px; border:1px solid #ccc; border-radius:4px; width:100%; margin-bottom:10px;" />
+              <label>E-mail</label>
+              <input id="brproject-email" class="email" name="email" type="email" autocomplete="off" style="padding:10px; border:1px solid #ccc; border-radius:4px; width:100%; margin-bottom:10px;" />
+              <label>Senha</label>
+              <input id="brproject-senha" class="senha" name="senha" type="password" autocomplete="off" style="padding:10px; border:1px solid #ccc; border-radius:4px; width:100%; margin-bottom:10px;" />
+              <button class="primary js-save-changes" type="submit" style="padding:12px; background-color:#0079bf; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; width:100%; margin-top:10px;">Entrar</button>
+              <p class="error" style="color:red;"></p>
+            </form>
+          `;
+        }
+
+        if (target.id === 'btn-logout') {
+          console.log('[DEBUG] Botão logout clicado');
+          const { token, url, usuario } = await getUserData();
+          renderLogoutConfirm(usuario);
+        }
+
+        if (target.id === 'btn-logout-nao') {
+          console.log('[DEBUG] Logout cancelado');
+          location.reload(); // Recarrega para voltar ao estado anterior
+        }
+
+        if (target.id === 'btn-logout-sim') {
+          console.log('[DEBUG] Logout confirmado');
+          await clearUserData();
+          brproject.token = null;
+          brproject.url = null;
+          renderUI({ 
+            logado: false, 
+            tarefaEmAndamento: false, 
+            usuario: null, 
+            tarefaDetalhe: {}, 
+            feedback: {type:'success',msg:'Logout realizado com sucesso!'} 
+          });
+        }
+
+        if (target.id === 'btn-iniciar') {
+          console.log('[DEBUG] Botão iniciar clicado');
+          if (!cardId) {
+            renderUI({ 
+              logado: true, 
+              tarefaEmAndamento: false, 
+              usuario: null, 
+              tarefaDetalhe: {}, 
+              feedback: {type:'error',msg:'Card não identificado.'} 
+            });
+            return;
+          }
+          
+          var tarefa = { referencia_id: cardId };
+          brproject.iniciarTarefa(tarefa, {
+            success: function(data) {
+              console.log('[DEBUG] Tarefa iniciada com sucesso:', data);
+              if (data.success) {
+                const tarefaDetalhe = {
+                  nome: data.data.atividade.tarefa.nome,
+                  descricao: data.data.atividade.tarefa.descricao,
+                  data_inicio: data.data.atividade.data_inicio
+                };
+                renderUI({ 
+                  logado: true, 
+                  tarefaEmAndamento: true, 
+                  usuario: null, 
+                  tarefaDetalhe, 
+                  feedback: {type:'success',msg:'Tarefa iniciada!'} 
+                });
+              } else {
+                renderUI({ 
+                  logado: true, 
+                  tarefaEmAndamento: false, 
+                  usuario: null, 
+                  tarefaDetalhe: {}, 
+                  feedback: {type:'error',msg: data.message || 'Erro ao iniciar tarefa'} 
+                });
+              }
+            },
+            error: function(error) {
+              console.log('[DEBUG] Erro ao iniciar tarefa:', error);
+              renderUI({ 
+                logado: true, 
+                tarefaEmAndamento: false, 
+                usuario: null, 
+                tarefaDetalhe: {}, 
+                feedback: {type:'error',msg: 'Erro ao iniciar tarefa'} 
+              });
+            }
+          });
+        }
+
+        if (target.id === 'btn-parar') {
+          console.log('[DEBUG] Botão parar clicado');
+          brproject.pararTarefa({
+            success: function(data) {
+              console.log('[DEBUG] Tarefa parada com sucesso:', data);
+              renderUI({ 
+                logado: true, 
+                tarefaEmAndamento: false, 
+                usuario: null, 
+                tarefaDetalhe: {}, 
+                feedback: {type:'success',msg:'Tarefa parada!'} 
+              });
+            },
+            error: function(error) {
+              console.log('[DEBUG] Erro ao parar tarefa:', error);
+              renderUI({ 
+                logado: true, 
+                tarefaEmAndamento: false, 
+                usuario: null, 
+                tarefaDetalhe: {}, 
+                feedback: {type:'error',msg: 'Erro ao parar tarefa'} 
+              });
+            }
+          });
         }
       });
-    });
-  });
-</script>
+
+      // Form submission
+      root.addEventListener('submit', async function(e) {
+        if (e.target.id === 'brproject-form-login') {
+          e.preventDefault();
+          console.log('[DEBUG] Form login submetido');
+          
+          const url = document.getElementById('brproject-url').value;
+          const email = document.getElementById('brproject-email').value;
+          const senha = document.getElementById('brproject-senha').value;
+          const data_form = { url, email, senha };
+
+          const submitBtn = document.querySelector('#brproject-form-login .js-save-changes');
+          const errorEl = document.querySelector('#brproject-form-login .error');
+          
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Entrando...';
+          errorEl.textContent = '';
+
+          brproject.gerarToken(data_form, {
+            success: async function(data) {
+              console.log('[DEBUG] Token gerado com sucesso:', data);
+              if (data.success) {
+                await setUserData(data.data.token, url, data.data.usuario);
+                brproject.token = data.data.token;
+                brproject.url = url;
+                renderUI({ 
+                  logado: true, 
+                  tarefaEmAndamento: false, 
+                  usuario: data.data.usuario, 
+                  tarefaDetalhe: {}, 
+                  feedback: {type:'success',msg:'Login realizado com sucesso!'} 
+                });
+              } else {
+                errorEl.textContent = data.message || 'Erro ao autenticar';
+              }
+            },
+            error: function(error) {
+              console.log('[DEBUG] Erro ao gerar token:', error);
+              errorEl.textContent = 'Erro ao autenticar';
+            },
+            complete: function() {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Entrar';
+            }
+          });
+        }
+      });
+    }
+
+    // Fallback caso o DOMContentLoaded já tenha disparado
+    if (document.readyState === 'loading') {
+      // Document ainda está carregando
+      document.addEventListener('DOMContentLoaded', initializePowerUp);
+    } else {
+      // Document já está pronto
+      initializePowerUp();
+    }
+  </script>
 </body>
 </html>
