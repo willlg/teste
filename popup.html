@@ -19,7 +19,14 @@
     console.log('[DEBUG] window.onerror:', msg, url, line, col, error);
   };
 
-  var t = window.TrelloPowerUp.iframe();
+  let t;
+  try {
+    console.log('[DEBUG] Antes do TrelloPowerUp.iframe');
+    t = window.TrelloPowerUp.iframe();
+    console.log('[DEBUG] Depois do TrelloPowerUp.iframe');
+  } catch (e) {
+    console.log('[DEBUG] Erro ao chamar TrelloPowerUp.iframe:', e);
+  }
 
   async function getUserData() {
     return {
