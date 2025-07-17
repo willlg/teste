@@ -53,18 +53,16 @@ function initializePowerUp() {
       });
     },
     
-    'board-buttons': function (t, options) {
-      console.log('board-buttons inicializado');
+    'board-buttons': function(t, options) {
       return [{
         icon: window.BRPROJECT_BASE_URL + '/images/project.png',
-        text: 'BRProject',
-        callback: function (t) {
-          console.log('Board button clicado');
+        text: 'BRProject Dashboard',
+        callback: function(t) {
           return t.popup({
-            title: 'BRProject - Dashboard',
+            title: 'BRProject - Painel de Controle',
             url: window.BRPROJECT_BASE_URL + '/dashboard.html',
-            height: 500,
-            width: 400
+            height: 600,
+            width: 800
           });
         }
       }];
@@ -75,19 +73,11 @@ function initializePowerUp() {
         .then(function(status) {
           if (status === 'running') {
             return [{
-              text: '⏱️ Em execução',
-              color: 'green'
-            }];
-          } else if (status === 'paused') {
-            return [{
-              text: '⏸️ Pausado',
-              color: 'yellow'
+              text: '⏱️ BRProject',
+              color: 'green',
+              icon: window.BRPROJECT_BASE_URL + '/images/play.png'
             }];
           }
-          return [];
-        })
-        .catch(function(error) {
-          console.error('Erro ao obter badge do card:', error);
           return [];
         });
     },
@@ -109,14 +99,24 @@ function initializePowerUp() {
           return [];
         });
     },
-    
-    'capabilities': [
-      'card-buttons',
-      'card-badges',
-      'card-detail-badges',
-      'board-buttons',
-      'show-settings'
-    ]
+
+    'card-back-section': function(t, options) {
+      return t.get('card', 'shared', 'brproject-running')
+        .then(function(running) {
+          if (running) {
+            return {
+              title: 'BRProject',
+              icon: window.BRPROJECT_BASE_URL + '/images/timer.png',
+              content: {
+                type: 'iframe',
+                url: window.BRPROJECT_BASE_URL + '/card-status.html',
+                height: 100
+              }
+            };
+          }
+          return null;
+        });
+    },
   });
   
   console.log('TrelloPowerUp inicializado com sucesso');

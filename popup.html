@@ -152,6 +152,26 @@
       }
     }
 
+    function renderClienteProjeto(tarefa) {
+      if (tarefa.cliente && tarefa.projeto) {
+        return `
+          <div class="brproject-cliente-projeto">
+            <span class="icon-member"></span>${tarefa.cliente.nome}<br/>
+            <span class="icon-archive"></span>${tarefa.projeto.nome}<br/>
+            <div class="brproject-actions">
+              <a href="${url}/tarefa/update/${tarefa.idtarefa}" target="_blank" class="button-link">
+                <span class="icon-edit"></span> Editar
+              </a>
+              <a href="${url}/tarefa/${tarefa.idtarefa}" target="_blank" class="button-link">
+                <span class="icon-subscribe"></span> Relatório
+              </a>
+            </div>
+          </div>
+        `;
+      }
+      return '<i>Não cadastrado</i>';
+    }
+
     function renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe, feedback, cardData }) {
       console.log('[DEBUG] renderUI chamado:', { logado, tarefaEmAndamento, usuario, tarefaDetalhe, feedback, cardData });
       
