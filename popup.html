@@ -555,14 +555,7 @@
         `;
       }
       
-      if (loading) {
-        html += `
-          <div style="text-align: center; padding: 20px;">
-            <div class="brproject-loading" style="margin: 0 auto;"></div>
-            <div style="margin-top: 8px; color: #666;">Carregando...</div>
-          </div>
-        `;
-      } else if (!logado) {
+      if (!logado) {
         html += `<button id="btn-login" class="brproject-login-button">Login no BRProject</button>`;
       } else if (!tarefaEmAndamento) {
         html += `
