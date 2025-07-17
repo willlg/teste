@@ -181,16 +181,6 @@ function initializePowerUp() {
         });
     },
     
-    'capabilities': [
-      'card-buttons',
-      'card-badges',
-      'card-detail-badges',
-      'card-back-section',
-      'board-buttons',
-      'list-actions',
-      'show-settings',
-      'authorization-status'
-    ]
   });
   
   console.log('TrelloPowerUp inicializado com sucesso');
