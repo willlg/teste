@@ -33,6 +33,7 @@
         callback_return.error(null, null, error.message);
       }
     }
+	console.log('Token gerado com sucesso' + this.data_req + this.url);
   };
   
   this.ehTokenValido = function(callback) {
