@@ -22,7 +22,6 @@
 
     let t;
     
-    // Aguarda o DOM estar pronto
     document.addEventListener('DOMContentLoaded', function() {
       console.log('[DEBUG] DOM Ready');
       initializePowerUp();
@@ -34,7 +33,6 @@
         t = window.TrelloPowerUp.iframe();
         console.log('[DEBUG] Depois do TrelloPowerUp.iframe, t:', t);
         
-        // Aguarda o Trello estar pronto
         t.render(function() {
           console.log('[DEBUG] Trello render callback executado');
           initializeApp();
@@ -42,7 +40,6 @@
         
       } catch (e) {
         console.log('[DEBUG] Erro ao chamar TrelloPowerUp.iframe:', e);
-        // Fallback: tenta inicializar mesmo com erro
         setTimeout(initializeApp, 1000);
       }
     }
@@ -164,7 +161,6 @@
       console.log('[DEBUG] initializeApp iniciado');
       
       try {
-        // Verifica se o Brproject está disponível
         if (typeof Brproject === 'undefined') {
           console.log('[DEBUG] Brproject não definido, tentando novamente em 500ms');
           setTimeout(initializeApp, 500);
@@ -217,12 +213,10 @@
           renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe });
         }
 
-        // Event listeners
         setupEventListeners(brproject, cardId);
         
       } catch (e) {
         console.log('[DEBUG] Erro no initializeApp:', e);
-        // Renderiza uma interface básica mesmo com erro
         renderUI({ 
           logado: false, 
           tarefaEmAndamento: false, 
@@ -271,7 +265,7 @@
 
         if (target.id === 'btn-logout-nao') {
           console.log('[DEBUG] Logout cancelado');
-          location.reload(); // Recarrega para voltar ao estado anterior
+          location.reload(); 
         }
 
         if (target.id === 'btn-logout-sim') {
@@ -368,7 +362,6 @@
         }
       });
 
-      // Form submission
       root.addEventListener('submit', async function(e) {
         if (e.target.id === 'brproject-form-login') {
           e.preventDefault();
@@ -417,12 +410,9 @@
       });
     }
 
-    // Fallback caso o DOMContentLoaded já tenha disparado
     if (document.readyState === 'loading') {
-      // Document ainda está carregando
       document.addEventListener('DOMContentLoaded', initializePowerUp);
     } else {
-      // Document já está pronto
       initializePowerUp();
     }
   </script>
