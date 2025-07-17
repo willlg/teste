@@ -563,24 +563,6 @@
           </div>
         `;
       } else if (!logado) {
-        html += `
-          <div class="brproject-actions">
-            <button id="btn-login" class="brproject-button brproject-button-primary">
-              Fazer Login no BRProject
-            </button>
-          </div>
-        `;
-      } else {
-        html += `
-          <div class="brproject-user-info">
-            <span>Olá, ${usuario && usuario.email ? usuario.email : 'Usuário'}</span>
-            <button id="btn-logout" class="brproject-button brproject-button-secondary" style="padding: 4px 8px; font-size: 11px;">
-              Sair
-            </button>
-          </div>
-        `;
-      /*
-      if (!logado) {
         html += `<button id="btn-login" class="brproject-login-button">Login no BRProject</button>`;
       } else if (!tarefaEmAndamento) {
         html += `
@@ -601,7 +583,6 @@
           <button id="btn-parar" class="brproject-player-pausar">Parar</button>
         `;
       }
-        */
       
       const root = document.getElementById('brproject-root');
       if (root) {
@@ -609,7 +590,7 @@
       } else {
         console.log('[DEBUG] Elemento brproject-root não encontrado');
       }
-    }
+    
 
     function renderLogoutConfirm(usuario) {
       const root = document.getElementById('brproject-root');
