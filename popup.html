@@ -491,25 +491,6 @@
       }
     }
 
-    async function updateCardBadges(status, taskData) {
-      try {
-        if (!t) return;
-        
-        await window.BRProjectUtils.updateCardStatus(t, cardId, status, taskData);
-        
-        if (status === 'running' && taskData) {
-          if (taskData.cliente && taskData.projeto) {
-            await Promise.all([
-              t.set('card', 'shared', 'brproject-client', taskData.cliente.nome),
-              t.set('card', 'shared', 'brproject-project', taskData.projeto.nome)
-            ]);
-          }
-        }
-      } catch (e) {
-        console.error('[DEBUG] Erro ao atualizar badges:', e);
-      }
-    }
-
     function renderClienteProjeto(tarefa) {
       if (tarefa.cliente && tarefa.projeto) {
         return `
@@ -536,23 +517,14 @@
       let html = '';
       
       if (cardData) {
-        html += `
-          <div class="brproject-card-info">
-            <strong>Card:</strong>
-            <div class="card-name">${cardData.name || 'N/A'}</div>
-            <div style="font-size: 11px; color: #666; margin-top: 4px;">ID: ${cardId || 'N/A'}</div>
-          </div>
-        `;
+        html += `<div style="background:#f0f0f0;padding:5px;margin-bottom:10px;font-size:12px;">
+          <strong>Card:</strong> ${cardData.name || 'N/A'}<br>
+          <strong>ID:</strong> ${cardId || 'N/A'}
+        </div>`;
       }
-    }
       
-      // Feedback
       if (feedback) {
-        html += `
-          <div class="brproject-feedback brproject-feedback-${feedback.type}">
-            ${feedback.msg}
-          </div>
-        `;
+        html += `<div style="color:${feedback.type === 'error' ? 'red' : 'green'};margin-bottom:8px;">${feedback.msg}</div>`;
       }
       
       if (!logado) {
@@ -583,7 +555,7 @@
       } else {
         console.log('[DEBUG] Elemento brproject-root não encontrado');
       }
-    
+    }
 
     function renderLogoutConfirm(usuario) {
       const root = document.getElementById('brproject-root');
