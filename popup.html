@@ -21,6 +21,7 @@
     };
 
     let t;
+    let cardId = null;
     
     document.addEventListener('DOMContentLoaded', function() {
       console.log('[DEBUG] DOM Ready');
@@ -35,7 +36,7 @@
         
         t.render(function() {
           console.log('[DEBUG] Trello render callback executado');
-          initializeApp();
+          return initializeApp();
         });
         
       } catch (e) {
@@ -92,36 +93,89 @@
       }
     }
 
-    function getCardId() {
+    async function getCardId() {
       try {
         if (!t) {
           console.log('[DEBUG] t não disponível em getCardId');
           return null;
         }
+        
+        const context = await t.getContext();
+        console.log('[DEBUG] Context:', context);
+        
+        if (context && context.card) {
+          console.log('[DEBUG] Card ID do context:', context.card);
+          return context.card;
+        }
+        
         const card = t.arg('card');
-        const cardId = card && card.id;
-        console.log('[DEBUG] Card ID:', cardId);
-        return cardId;
+        if (card && card.id) {
+          console.log('[DEBUG] Card ID do t.arg:', card.id);
+          return card.id;
+        }
+        
+        const url = window.location.href;
+        console.log('[DEBUG] URL atual:', url);
+        
+        if (url.includes('/c/')) {
+          const urlParts = url.split('/c/');
+          if (urlParts.length > 1) {
+            const cardIdFromUrl = urlParts[1].split('/')[0];
+            console.log('[DEBUG] Card ID da URL:', cardIdFromUrl);
+            return cardIdFromUrl;
+          }
+        }
+        
+        console.log('[DEBUG] Nenhum método conseguiu obter o card ID');
+        return null;
+        
       } catch (e) {
         console.log('[DEBUG] Erro em getCardId:', e);
         return null;
       }
     }
 
-    // Renderização dinâmica da interface
-    function renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe, feedback }) {
-      console.log('[DEBUG] renderUI chamado:', { logado, tarefaEmAndamento, usuario, tarefaDetalhe, feedback });
+    async function getCardData() {
+      try {
+        if (!t || !cardId) {
+          console.log('[DEBUG] t ou cardId não disponível em getCardData');
+          return null;
+        }
+        
+        const card = await t.card('id', 'name', 'desc', 'url');
+        console.log('[DEBUG] Dados do card:', card);
+        return card;
+        
+      } catch (e) {
+        console.log('[DEBUG] Erro em getCardData:', e);
+        return null;
+      }
+    }
+
+    function renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe, feedback, cardData }) {
+      console.log('[DEBUG] renderUI chamado:', { logado, tarefaEmAndamento, usuario, tarefaDetalhe, feedback, cardData });
       
       let html = '';
+      
+      if (cardData) {
+        html += `<div style="background:#f0f0f0;padding:5px;margin-bottom:10px;font-size:12px;">
+          <strong>Card:</strong> ${cardData.name || 'N/A'}<br>
+          <strong>ID:</strong> ${cardId || 'N/A'}
+        </div>`;
+      }
+      
       if (feedback) {
         html += `<div style="color:${feedback.type === 'error' ? 'red' : 'green'};margin-bottom:8px;">${feedback.msg}</div>`;
       }
+      
       if (!logado) {
         html += `<button id="btn-login" class="brproject-login-button">Login no BRProject</button>`;
       } else if (!tarefaEmAndamento) {
         html += `
           <div style="margin-bottom:10px;">Olá, ${usuario && usuario.email ? usuario.email : ''} <button id="btn-logout" class="brproject-logout-button" style="float:right;">Sair</button></div>
-          <button id="btn-iniciar" class="brproject-player-iniciar">Iniciar</button>
+          <button id="btn-iniciar" class="brproject-player-iniciar" ${!cardId ? 'disabled' : ''}>
+            ${!cardId ? 'Card não identificado' : 'Iniciar'}
+          </button>
         `;
       } else {
         html += `
@@ -144,7 +198,6 @@
       }
     }
 
-    // Modal de confirmação de logout inline
     function renderLogoutConfirm(usuario) {
       const root = document.getElementById('brproject-root');
       if (root) {
@@ -171,8 +224,11 @@
         var brproject = new Brproject();
         console.log('[DEBUG] Depois do new Brproject');
         
-        var cardId = getCardId();
+        cardId = await getCardId();
         console.log('[DEBUG] Card ID obtido:', cardId);
+        
+        const cardData = await getCardData();
+        console.log('[DEBUG] Dados do card obtidos:', cardData);
 
         let { token, url, usuario } = await getUserData();
         console.log('[DEBUG] Dados do usuário:', { token: !!token, url: !!url, usuario });
@@ -201,19 +257,19 @@
                 };
               }
               console.log('[DEBUG] Renderizando UI após getUltimaTarefa');
-              renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe });
+              renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe, cardData });
             },
             error: function(error) {
               console.log('[DEBUG] getUltimaTarefa erro:', error);
-              renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe });
+              renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe, cardData });
             }
           });
         } else {
           console.log('[DEBUG] Renderizando UI inicial');
-          renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe });
+          renderUI({ logado, tarefaEmAndamento, usuario, tarefaDetalhe, cardData });
         }
 
-        setupEventListeners(brproject, cardId);
+        setupEventListeners(brproject, cardId, cardData);
         
       } catch (e) {
         console.log('[DEBUG] Erro no initializeApp:', e);
@@ -222,12 +278,13 @@
           tarefaEmAndamento: false, 
           usuario: null, 
           tarefaDetalhe: {}, 
-          feedback: {type:'error', msg:'Erro ao inicializar aplicação'} 
+          feedback: {type:'error', msg:'Erro ao inicializar aplicação'},
+          cardData: null
         });
       }
     }
 
-    function setupEventListeners(brproject, cardId) {
+    function setupEventListeners(brproject, cardId, cardData) {
       console.log('[DEBUG] Configurando event listeners');
       
       const root = document.getElementById('brproject-root');
@@ -236,7 +293,6 @@
         return;
       }
 
-      // Usando delegação de eventos
       root.addEventListener('click', async function(e) {
         const target = e.target;
         console.log('[DEBUG] Click detectado em:', target.id);
@@ -278,7 +334,8 @@
             tarefaEmAndamento: false, 
             usuario: null, 
             tarefaDetalhe: {}, 
-            feedback: {type:'success',msg:'Logout realizado com sucesso!'} 
+            feedback: {type:'success',msg:'Logout realizado com sucesso!'},
+            cardData: null
           });
         }
 
@@ -290,12 +347,21 @@
               tarefaEmAndamento: false, 
               usuario: null, 
               tarefaDetalhe: {}, 
-              feedback: {type:'error',msg:'Card não identificado.'} 
+              feedback: {type:'error',msg:'Card não identificado.'},
+              cardData: cardData
             });
             return;
           }
           
-          var tarefa = { referencia_id: cardId };
+          let tarefaNome = cardData && cardData.name ? cardData.name : 'Tarefa sem nome';
+          let tarefaDescricao = cardData && cardData.desc ? cardData.desc : '';
+          
+          var tarefa = { 
+            nome: tarefaNome,
+            descricao: tarefaDescricao,
+            referencia_id: cardId 
+          };
+          
           brproject.iniciarTarefa(tarefa, {
             success: function(data) {
               console.log('[DEBUG] Tarefa iniciada com sucesso:', data);
@@ -310,7 +376,8 @@
                   tarefaEmAndamento: true, 
                   usuario: null, 
                   tarefaDetalhe, 
-                  feedback: {type:'success',msg:'Tarefa iniciada!'} 
+                  feedback: {type:'success',msg:'Tarefa iniciada!'},
+                  cardData: cardData
                 });
               } else {
                 renderUI({ 
@@ -318,7 +385,8 @@
                   tarefaEmAndamento: false, 
                   usuario: null, 
                   tarefaDetalhe: {}, 
-                  feedback: {type:'error',msg: data.message || 'Erro ao iniciar tarefa'} 
+                  feedback: {type:'error',msg: data.message || 'Erro ao iniciar tarefa'},
+                  cardData: cardData
                 });
               }
             },
@@ -329,7 +397,8 @@
                 tarefaEmAndamento: false, 
                 usuario: null, 
                 tarefaDetalhe: {}, 
-                feedback: {type:'error',msg: 'Erro ao iniciar tarefa'} 
+                feedback: {type:'error',msg: 'Erro ao iniciar tarefa'},
+                cardData: cardData
               });
             }
           });
@@ -345,7 +414,8 @@
                 tarefaEmAndamento: false, 
                 usuario: null, 
                 tarefaDetalhe: {}, 
-                feedback: {type:'success',msg:'Tarefa parada!'} 
+                feedback: {type:'success',msg:'Tarefa parada!'},
+                cardData: cardData
               });
             },
             error: function(error) {
@@ -355,7 +425,8 @@
                 tarefaEmAndamento: false, 
                 usuario: null, 
                 tarefaDetalhe: {}, 
-                feedback: {type:'error',msg: 'Erro ao parar tarefa'} 
+                feedback: {type:'error',msg: 'Erro ao parar tarefa'},
+                cardData: cardData
               });
             }
           });
@@ -391,7 +462,8 @@
                   tarefaEmAndamento: false, 
                   usuario: data.data.usuario, 
                   tarefaDetalhe: {}, 
-                  feedback: {type:'success',msg:'Login realizado com sucesso!'} 
+                  feedback: {type:'success',msg:'Login realizado com sucesso!'},
+                  cardData: cardData
                 });
               } else {
                 errorEl.textContent = data.message || 'Erro ao autenticar';
