@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>BRProject - Login</title>
+  <link rel="stylesheet" href="https://brproject.vercel.app/css/brproject.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background-color: #f8f9fa;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .brproject-container {
+      max-width: 100%;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    
+    .brproject-header {
+      background: linear-gradient(135deg, #0079bf 0%, #005a8b 100%);
+      color: white;
+      padding: 16px;
+      text-align: center;
+    }
+    
+    .brproject-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .brproject-content {
+      padding: 20px;
+    }
+    
+    .brproject-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .brproject-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .brproject-form-group label {
+      font-weight: 500;
+      color: #333;
+      font-size: 13px;
+    }
+    
+    .brproject-form-group input {
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s ease;
+    }
+    
+    .brproject-form-group input:focus {
+      outline: none;
+      border-color: #0079bf;
+      box-shadow: 0 0 0 2px rgba(0, 121, 191, 0.1);
+    }
+    
+    .brproject-button {
+      padding: 12px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .brproject-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .brproject-button-primary {
+      background: #0079bf;
+      color: white;
+    }
+    
+    .brproject-button-primary:hover:not(:disabled) {
+      background: #005a8b;
+    }
+    
+    .brproject-button-danger {
+      background: #f44336;
+      color: white;
+    }
+    
+    .brproject-button-danger:hover:not(:disabled) {
+      background: #d32f2f;
+    }
+    
+    .brproject-user-info {
+      background: #e8f5e9;
+      border: 1px solid #4caf50;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .brproject-user-info h4 {
+      margin: 0 0 8px 0;
+      color: #2e7d32;
+      font-size: 16px;
+    }
+    
+    .brproject-user-info p {
+      margin: 4px 0;
+      font-size: 13px;
+      color: #333;
+    }
+    
+    .brproject-feedback {
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+    
+    .brproject-feedback-success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #4caf50;
+    }
+    
+    .brproject-feedback-error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #f44336;
+    }
+    
+    .brproject-loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #0079bf;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="brproject-container">
+    <div class="brproject-header">
+      <h3>BRProject - Configurações</h3>
+    </div>
+    
+    <div class="brproject-content">
+      <div id="brproject-root">
+        <div class="brproject-loading" style="margin: 20px auto; display: block;"></div>
+        <div style="text-align: center; color: #666; margin-top: 8px;">Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <script src="config.js"></script>
+  <script src="vendor/jquery.min.js"></script>
+  <script src="vendor/md5.js"></script>
+  <script src="brproject.js"></script>
+  <script>
+    let t;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      initializePowerUp();
+    });
+
+    function initializePowerUp() {
+      try {
+        t = window.TrelloPowerUp.iframe();
+        t.render(function() {
+          return initializeApp();
+        });
+      } catch (e) {
+        console.error('Erro ao inicializar PowerUp:', e);
+        setTimeout(initializeApp, 1000);
+      }
+    }
+
+    async function getUserData() {
+      try {
+        if (!t) return { token: null, url: null, usuario: null };
+        
+        const [token, url, usuario] = await Promise.all([
+          t.get('member', 'private', 'brproject-token'),
+          t.get('member', 'private', 'brproject-url'),
+          t.get('member', 'private', 'brproject-usuario')
+        ]);
+        
+        return { token, url, usuario };
+      } catch (e) {
+        console.error('Erro em getUserData:', e);
+        return { token: null, url: null, usuario: null };
+      }
+    }
+
+    async function setUserData(token, url, usuario) {
+      try {
+        if (!t) return;
+        
+        await Promise.all([
+          t.set('member', 'private', 'brproject-token', token),
+          t.set('member', 'private', 'brproject-url', url),
+          t.set('member', 'private', 'brproject-usuario', usuario)
+        ]);
+      } catch (e) {
+        console.error('Erro em setUserData:', e);
+      }
+    }
+
+    async function clearUserData() {
+      try {
+        if (!t) return;
+        
+        await Promise.all([
+          t.remove('member', 'private', 'brproject-token'),
+          t.remove('member', 'private', 'brproject-url'),
+          t.remove('member', 'private', 'brproject-usuario')
+        ]);
+      } catch (e) {
+        console.error('Erro em clearUserData:', e);
+      }
+    }
+
+    function renderUI({ logado, usuario, feedback }) {
+      let html = '';
+      
+      if (feedback) {
+        html += `<div class="brproject-feedback brproject-feedback-${feedback.type}">${feedback.msg}</div>`;
+      }
+      
+      if (!logado) {
+        html += `
+          <form id="brproject-form-login" class="brproject-form">
+            <div class="brproject-form-group">
+              <label>URL do BRProject</label>
+              <input id="brproject-url" name="url" value="https://www2.projetos.brsis.com.br/brproject" type="text" autocomplete="off" />
+            </div>
+            <div class="brproject-form-group">
+              <label>E-mail</label>
+              <input id="brproject-email" name="email" type="email" autocomplete="off" />
+            </div>
+            <div class="brproject-form-group">
+              <label>Senha</label>
+              <input id="brproject-senha" name="senha" type="password" autocomplete="off" />
+            </div>
+            <button class="brproject-button brproject-button-primary" type="submit">
+              <span>Entrar</span>
+            </button>
+          </form>
+        `;
+      } else {
+        html += `
+          <div class="brproject-user-info">
+            <h4>Usuário Conectado</h4>
+            <p><strong>Email:</strong> ${usuario?.email || 'N/A'}</p>
+            <p><strong>Nome:</strong> ${usuario?.nome || 'N/A'}</p>
+          </div>
+          <button id="btn-logout" class="brproject-button brproject-button-danger">
+            Desconectar
+          </button>
+        `;
+      }
+      
+      const root = document.getElementById('brproject-root');
+      if (root) {
+        root.innerHTML = html;
+        if (t) {
+          t.sizeTo('#brproject-root');
+        }
+      }
+    }
+
+    async function initializeApp() {
+      try {
+        if (typeof Brproject === 'undefined') {
+          setTimeout(initializeApp, 500);
+          return;
+        }
+
+        const { token, url, usuario } = await getUserData();
+        const logado = !!token && !!url;
+
+        renderUI({ logado, usuario });
+        setupEventListeners();
+        
+      } catch (e) {
+        console.error('Erro no initializeApp:', e);
+        renderUI({ 
+          logado: false, 
+          usuario: null, 
+          feedback: {type:'error', msg:'Erro ao inicializar aplicação'}
+        });
+      }
+    }
+
+    function setupEventListeners() {
+      const root = document.getElementById('brproject-root');
+      if (!root) return;
+
+      root.addEventListener('click', async function(e) {
+        if (e.target.id === 'btn-logout') {
+          await clearUserData();
+          renderUI({ 
+            logado: false, 
+            usuario: null, 
+            feedback: {type:'success', msg:'Logout realizado com sucesso!'}
+          });
+        }
+      });
+
+      root.addEventListener('submit', async function(e) {
+        if (e.target.id === 'brproject-form-login') {
+          e.preventDefault();
+          
+          const url = document.getElementById('brproject-url').value;
+          const email = document.getElementById('brproject-email').value;
+          const senha = document.getElementById('brproject-senha').value;
+          
+          const submitBtn = document.querySelector('#brproject-form-login button[type="submit"]');
+          const originalText = submitBtn.innerHTML;
+          
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="brproject-loading"></span> Entrando...';
+
+          try {
+            const brproject = new Brproject();
+            
+            await new Promise((resolve, reject) => {
+              brproject.gerarToken({ url, email, senha }, {
+                success: async function(data) {
+                  if (data.success) {
+                    await setUserData(data.data.token, url, data.data.usuario);
+                    renderUI({ 
+                      logado: true, 
+                      usuario: data.data.usuario, 
+                      feedback: {type:'success', msg:'Login realizado com sucesso!'}
+                    });
+                    
+                    // Fechar popup após sucesso
+                    setTimeout(() => {
+                      if (t) t.closePopup();
+                    }, 1500);
+                    
+                    resolve();
+                  } else {
+                    renderUI({ 
+                      logado: false, 
+                      usuario: null, 
+                      feedback: {type:'error', msg: data.message || 'Erro ao autenticar'}
+                    });
+                    reject(new Error(data.message));
+                  }
+                },
+                error: function(error) {
+                  renderUI({ 
+                    logado: false, 
+                    usuario: null, 
+                    feedback: {type:'error', msg: 'Erro ao conectar com o servidor'}
+                  });
+                  reject(error);
+                }
+              });
+            });
+            
+          } catch (error) {
+            console.error('Erro no login:', error);
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+                      }
+            }
+        });
+        }
+    </script>
+    </body>
+    </html>
