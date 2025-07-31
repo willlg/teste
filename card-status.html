@@ -49,12 +49,6 @@
       background: #d32f2f;
     }
     
-    .brproject-button-disabled {
-      background: #e0e0e0;
-      color: #666;
-      cursor: not-allowed;
-    }
-    
     .brproject-loading {
       display: inline-block;
       width: 12px;
@@ -74,7 +68,7 @@
 </head>
 <body>
   <div id="brproject-status">
-    <button class="brproject-button brproject-button-disabled" disabled>Carregando...</button>
+    <button class="brproject-button brproject-button-start" disabled>Carregando...</button>
   </div>
 
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
@@ -141,68 +135,40 @@
       }
     }
 
-    function renderButton(state, isLoading = false) {
+    function renderButton(isRunning, isLoading = false) {
       const container = document.getElementById('brproject-status');
       
-      switch(state) {
-        case 'not-logged-in':
-          container.innerHTML = `
-            <button class="brproject-button brproject-button-disabled" disabled>
-              Não conectado ao BRProject
-            </button>
-          `;
-          break;
-          
-        case 'no-card':
-          container.innerHTML = `
-            <button class="brproject-button brproject-button-disabled" disabled>
-              Card não identificado
-            </button>
-          `;
-          break;
-          
-        case 'running':
-          container.innerHTML = `
-            <button id="btn-stop" class="brproject-button brproject-button-stop" ${isLoading ? 'disabled' : ''}>
-              ${isLoading ? '<span class="brproject-loading"></span>' : ''}Parar Tarefa
-            </button>
-          `;
-          break;
-          
-        case 'running-other':
-          container.innerHTML = `
-            <button class="brproject-button brproject-button-disabled" disabled>
-              Outra tarefa em andamento
-            </button>
-          `;
-          break;
-          
-        case 'stopped':
-        default:
-          container.innerHTML = `
-            <button id="btn-start" class="brproject-button brproject-button-start" ${isLoading ? 'disabled' : ''}>
-              ${isLoading ? '<span class="brproject-loading"></span>' : ''}Iniciar Tarefa
-            </button>
-          `;
-          break;
+      if (isRunning) {
+        container.innerHTML = `
+          <button id="btn-stop" class="brproject-button brproject-button-stop" ${isLoading ? 'disabled' : ''}>
+            ${isLoading ? '<span class="brproject-loading"></span>' : ''}Parar Tarefa
+          </button>
+        `;
+      } else {
+        container.innerHTML = `
+          <button id="btn-start" class="brproject-button brproject-button-start" ${isLoading ? 'disabled' : ''}>
+            ${isLoading ? '<span class="brproject-loading"></span>' : ''}Iniciar Tarefa
+          </button>
+        `;
       }
     }
 
     async function checkTaskStatus() {
-      if (!brproject || !cardId) return { running: false, isThisCard: false };
+      if (!brproject || !cardId) return false;
       
       return new Promise((resolve) => {
         brproject.getUltimaTarefa({
           success: function(data) {
-            if (data.success && data.data.atividade.finalizada != 1) {
-              const isThisCard = data.data.atividade.tarefa.referencia_id == cardId;
-              resolve({ running: true, isThisCard });
+            if (data.success && 
+                data.data.atividade.finalizada != 1 && 
+                data.data.atividade.tarefa.referencia_id == cardId) {
+              resolve(true);
             } else {
-              resolve({ running: false, isThisCard: false });
+              resolve(false);
             }
           },
           error: function(error) {
-            resolve({ running: false, isThisCard: false });
+            resolve(false);
           }
         });
       });
@@ -211,7 +177,7 @@
     async function startTask() {
       if (!brproject || !cardId) return;
       
-      renderButton('stopped', true);
+      renderButton(false, true);
       
       try {
         const cardData = await getCardData();
@@ -227,66 +193,35 @@
         brproject.iniciarTarefa(tarefa, {
           success: function(data) {
             if (data.success) {
-              renderButton('running');
+              renderButton(true);
             } else {
-              renderButton('stopped');
-              if (t && t.alert) {
-                t.alert({
-                  message: 'Erro ao iniciar tarefa: ' + (data.message || ''),
-                  duration: 4000,
-                  display: 'error'
-                });
-              }
+              renderButton(false);
+              alert('Erro ao iniciar tarefa: ' + (data.message || ''));
             }
           },
           error: function(error) {
-            renderButton('stopped');
-            if (t && t.alert) {
-              t.alert({
-                message: 'Erro ao iniciar tarefa',
-                duration: 4000,
-                display: 'error'
-              });
-            }
+            renderButton(false);
+            alert('Erro ao iniciar tarefa');
           }
         });
       } catch (e) {
-        renderButton('stopped');
-        if (t && t.alert) {
-          t.alert({
-            message: 'Erro ao iniciar tarefa',
-            duration: 4000,
-            display: 'error'
-          });
-        }
+        renderButton(false);
+        alert('Erro ao iniciar tarefa');
       }
     }
 
     async function stopTask() {
       if (!brproject) return;
       
-      renderButton('running', true);
+      renderButton(true, true);
       
       brproject.pararTarefa({
         success: function(data) {
-          renderButton('stopped');
-          if (t && t.alert) {
-            t.alert({
-              message: 'Tarefa parada com sucesso!',
-              duration: 3000,
-              display: 'info'
-            });
-          }
+          renderButton(false);
         },
         error: function(error) {
-          renderButton('running');
-          if (t && t.alert) {
-            t.alert({
-              message: 'Erro ao parar tarefa',
-              duration: 4000,
-              display: 'error'
-            });
-          }
+          renderButton(true);
+          alert('Erro ao parar tarefa');
         }
       });
     }
@@ -302,7 +237,8 @@
         cardId = await getCardId();
         
         if (!cardId) {
-          renderButton('no-card');
+          document.getElementById('brproject-status').innerHTML = 
+            '<button class="brproject-button brproject-button-start" disabled>Card não identificado</button>';
           return;
         }
 
@@ -310,24 +246,17 @@
         const isLoggedIn = !!token && !!url;
         
         if (!isLoggedIn) {
-          renderButton('not-logged-in');
+          document.getElementById('brproject-status').innerHTML = 
+            '<button class="brproject-button brproject-button-start" disabled>Não conectado</button>';
           return;
         }
         
         brproject.token = token;
         brproject.url = url;
 
-        const { running, isThisCard } = await checkTaskStatus();
-        
-        if (running && isThisCard) {
-          renderButton('running');
-        } else if (running && !isThisCard) {
-          renderButton('running-other');
-        } else {
-          renderButton('stopped');
-        }
+        const isRunning = await checkTaskStatus();
+        renderButton(isRunning);
 
-        // Event listeners
         document.addEventListener('click', function(e) {
           if (e.target.id === 'btn-start') {
             startTask();
@@ -338,8 +267,8 @@
         });
         
       } catch (e) {
-        console.log('[DEBUG] Erro no initializeApp:', e);
-        renderButton('no-card');
+        document.getElementById('brproject-status').innerHTML = 
+          '<button class="brproject-button brproject-button-start" disabled>Erro ao carregar</button>';
       }
     }
 
