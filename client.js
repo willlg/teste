@@ -54,7 +54,7 @@ function initializePowerUp() {
               icon: window.BRPROJECT_BASE_URL + '/images/project.png',
               content: {
                 type: 'iframe',
-                url: window.BRPROJECT_BASE_URL + '/card-status.html',
+                url: t.signUrl(window.BRPROJECT_BASE_URL + '/card-status.html'),
                 height: 60
               }
             };
