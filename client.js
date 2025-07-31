@@ -45,25 +45,30 @@ function initializePowerUp() {
     },
         
     'card-back-section': function(t, options) {
-      return t.get('card', 'shared', 'brproject-status')
-        .then(function(status) {
-          if (status === 'running') {
-            return {
-              title: 'Parar',
-              icon: GRAY_ICON,
-              content: {
-                type: 'iframe',
-                url: window.BRPROJECT_BASE_URL + '/card-status.html',
-                height: 120
-              }
-            };
-          }
-          return null;
-        })
-        .catch(function(error) {
-          console.error('Erro ao obter seção do card:', error);
-          return null;
-        });
+      console.log('[DEBUG] card-back-section chamado');
+      
+      return Promise.all([
+        t.get('member', 'private', 'brproject-token'),
+        t.get('member', 'private', 'brproject-url')
+      ])
+      .then(function([token, url]) {
+        if (token && url) {
+          return {
+            title: 'BRProject',
+            icon: window.BRPROJECT_BASE_URL + '/images/project.png',
+            content: {
+              type: 'iframe',
+              url: window.BRPROJECT_BASE_URL + '/card-status.html',
+              height: 100
+            }
+          };
+        }
+        return null;
+      })
+      .catch(function(error) {
+        console.error('Erro ao obter seção do card:', error);
+        return null;
+      });
     },
     
     'authorization-status': function(t, options) {
