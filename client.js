@@ -50,8 +50,8 @@ function initializePowerUp() {
         .then(function(token) {
           if (token) {
             return {
-              title: 'BRProject',
-              icon: window.BRPROJECT_BASE_URL + '/images/project.png',
+              //title: 'BRProject',
+              //icon: window.BRPROJECT_BASE_URL + '/images/project.png',
               content: {
                 type: 'iframe',
                 url: t.signUrl(window.BRPROJECT_BASE_URL + '/card-status.html'),
