@@ -2,60 +2,20 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>BRProject - Status do Card</title>
+  <title>BRProject - Status</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
-      padding: 12px;
+      padding: 8px;
       background: transparent;
-      color: #333;
-      font-size: 14px;
+      font-size: 12px;
     }
     
-    .brproject-card-status {
-      display: flex;
+    .brproject-button {
+      display: inline-flex;
       align-items: center;
-      gap: 12px;
-    }
-    
-    .brproject-status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex: 1;
-    }
-    
-    .status-icon {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #4caf50;
-      animation: pulse 1.5s infinite;
-    }
-    
-    .status-icon.stopped {
-      background: #ccc;
-      animation: none;
-    }
-    
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
-    
-    .status-text {
-      font-size: 13px;
-      color: #666;
-    }
-    
-    .status-text.running {
-      color: #2e7d32;
-      font-weight: 500;
-    }
-    
-    .brproject-action-button {
+      justify-content: center;
       padding: 6px 12px;
       border: none;
       border-radius: 4px;
@@ -63,30 +23,30 @@
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
-      min-width: 60px;
-      text-align: center;
+      width: 100%;
+      min-height: 24px;
     }
     
-    .brproject-action-button:disabled {
+    .brproject-button:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
     
-    .brproject-action-button.start {
+    .brproject-button-start {
       background: #0079bf;
       color: white;
     }
     
-    .brproject-action-button.start:hover:not(:disabled) {
+    .brproject-button-start:hover:not(:disabled) {
       background: #005a8b;
     }
     
-    .brproject-action-button.stop {
+    .brproject-button-stop {
       background: #f44336;
       color: white;
     }
     
-    .brproject-action-button.stop:hover:not(:disabled) {
+    .brproject-button-stop:hover:not(:disabled) {
       background: #d32f2f;
     }
     
@@ -94,8 +54,8 @@
       display: inline-block;
       width: 12px;
       height: 12px;
-      border: 2px solid #f3f3f3;
-      border-top: 2px solid #0079bf;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top: 2px solid white;
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin-right: 6px;
@@ -105,30 +65,11 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    
-    .task-info {
-      font-size: 11px;
-      color: #666;
-      margin-top: 4px;
-      line-height: 1.3;
-    }
-    
-    .error-message {
-      color: #c62828;
-      font-size: 11px;
-      margin-top: 4px;
-    }
-    
-    .success-message {
-      color: #2e7d32;
-      font-size: 11px;
-      margin-top: 4px;
-    }
   </style>
 </head>
 <body>
-  <div id="brproject-card-status">
-    <div class="brproject-loading" style="margin: 20px auto; display: block;"></div>
+  <div id="brproject-status">
+    <button class="brproject-button brproject-button-start" disabled>Carregando...</button>
   </div>
 
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
@@ -137,30 +78,22 @@
   <script src="vendor/md5.js"></script>
   <script src="brproject.js"></script>
   <script>
-    console.log('[DEBUG] Card Status carregado');
-    
     let t;
     let cardId = null;
     let brproject = null;
-    let isLoading = false;
     
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('[DEBUG] Card Status DOM Ready');
       initializeCardStatus();
     });
 
     function initializeCardStatus() {
       try {
-        console.log('[DEBUG] Inicializando Card Status');
         t = window.TrelloPowerUp.iframe();
-        
         t.render(function() {
-          console.log('[DEBUG] Card Status render callback');
           return initializeApp();
         });
-        
       } catch (e) {
-        console.log('[DEBUG] Erro ao inicializar Card Status:', e);
+        console.log('[DEBUG] Erro ao inicializar:', e);
         setTimeout(initializeApp, 1000);
       }
     }
@@ -175,7 +108,6 @@
         
         return { token, url, usuario };
       } catch (e) {
-        console.log('[DEBUG] Erro em getUserData:', e);
         return { token: null, url: null, usuario: null };
       }
     }
@@ -188,10 +120,8 @@
         if (context && context.card) {
           return context.card;
         }
-        
         return null;
       } catch (e) {
-        console.log('[DEBUG] Erro em getCardId:', e);
         return null;
       }
     }
@@ -199,68 +129,29 @@
     async function getCardData() {
       try {
         if (!t || !cardId) return null;
-        
         const card = await t.card('id', 'name', 'desc');
         return card;
       } catch (e) {
-        console.log('[DEBUG] Erro em getCardData:', e);
         return null;
       }
     }
 
-    function renderStatus({ isRunning, taskDetail, isLoggedIn, message, messageType }) {
-      const container = document.getElementById('brproject-card-status');
+    function renderButton(isRunning, isLoading = false) {
+      const container = document.getElementById('brproject-status');
       
-      if (!isLoggedIn) {
+      if (isRunning) {
         container.innerHTML = `
-          <div class="brproject-card-status">
-            <div class="brproject-status-indicator">
-              <div class="status-icon stopped"></div>
-              <div class="status-text">Não conectado</div>
-            </div>
-          </div>
-        `;
-        return;
-      }
-      
-      let html = `<div class="brproject-card-status">`;
-      
-      if (isRunning && taskDetail) {
-        html += `
-          <div class="brproject-status-indicator">
-            <div class="status-icon"></div>
-            <div class="status-text running">Em execução</div>
-          </div>
-          <button id="btn-stop" class="brproject-action-button stop" ${isLoading ? 'disabled' : ''}>
-            ${isLoading ? '<span class="brproject-loading"></span>' : ''}Parar
+          <button id="btn-stop" class="brproject-button brproject-button-stop" ${isLoading ? 'disabled' : ''}>
+            ${isLoading ? '<span class="brproject-loading"></span>' : ''}Parar Tarefa
           </button>
         `;
-        
-        if (taskDetail.nome) {
-          html += `<div class="task-info">Tarefa: ${taskDetail.nome}</div>`;
-        }
-        if (taskDetail.data_inicio) {
-          html += `<div class="task-info">Início: ${taskDetail.data_inicio}</div>`;
-        }
       } else {
-        html += `
-          <div class="brproject-status-indicator">
-            <div class="status-icon stopped"></div>
-            <div class="status-text">Parado</div>
-          </div>
-          <button id="btn-start" class="brproject-action-button start" ${isLoading ? 'disabled' : ''}>
-            ${isLoading ? '<span class="brproject-loading"></span>' : ''}Iniciar
+        container.innerHTML = `
+          <button id="btn-start" class="brproject-button brproject-button-start" ${isLoading ? 'disabled' : ''}>
+            ${isLoading ? '<span class="brproject-loading"></span>' : ''}Iniciar Tarefa
           </button>
         `;
       }
-      
-      html += `</div>`;
-      
-      if (message) {
-        html += `<div class="${messageType === 'error' ? 'error-message' : 'success-message'}">${message}</div>`;
-      }
-      
-      container.innerHTML = html;
     }
 
     async function checkTaskStatus() {
@@ -269,33 +160,25 @@
       return new Promise((resolve) => {
         brproject.getUltimaTarefa({
           success: function(data) {
-            console.log('[DEBUG] getUltimaTarefa sucesso:', data);
             if (data.success && 
                 data.data.atividade.finalizada != 1 && 
                 data.data.atividade.tarefa.referencia_id == cardId) {
-              const taskDetail = {
-                nome: data.data.atividade.tarefa.nome,
-                descricao: data.data.atividade.tarefa.descricao,
-                data_inicio: data.data.atividade.data_inicio
-              };
-              resolve({ isRunning: true, taskDetail });
+              resolve(true);
             } else {
-              resolve({ isRunning: false, taskDetail: null });
+              resolve(false);
             }
           },
           error: function(error) {
-            console.log('[DEBUG] getUltimaTarefa erro:', error);
-            resolve({ isRunning: false, taskDetail: null });
+            resolve(false);
           }
         });
       });
     }
 
     async function startTask() {
-      if (!brproject || !cardId || isLoading) return;
+      if (!brproject || !cardId) return;
       
-      isLoading = true;
-      renderStatus({ isRunning: false, taskDetail: null, isLoggedIn: true });
+      renderButton(false, true);
       
       try {
         const cardData = await getCardData();
@@ -310,106 +193,43 @@
         
         brproject.iniciarTarefa(tarefa, {
           success: function(data) {
-            console.log('[DEBUG] Tarefa iniciada com sucesso:', data);
-            isLoading = false;
-            
             if (data.success) {
-              const taskDetail = {
-                nome: data.data.atividade.tarefa.nome,
-                descricao: data.data.atividade.tarefa.descricao,
-                data_inicio: data.data.atividade.data_inicio
-              };
-              
-              renderStatus({ 
-                isRunning: true, 
-                taskDetail, 
-                isLoggedIn: true,
-                message: 'Tarefa iniciada!',
-                messageType: 'success'
-              });
-              
-              setTimeout(() => {
-                renderStatus({ isRunning: true, taskDetail, isLoggedIn: true });
-              }, 3000);
-              
+              renderButton(true);
             } else {
-              renderStatus({ 
-                isRunning: false, 
-                taskDetail: null, 
-                isLoggedIn: true,
-                message: data.message || 'Erro ao iniciar tarefa',
-                messageType: 'error'
-              });
+              renderButton(false);
+              alert('Erro ao iniciar tarefa: ' + (data.message || ''));
             }
           },
           error: function(error) {
-            console.log('[DEBUG] Erro ao iniciar tarefa:', error);
-            isLoading = false;
-            renderStatus({ 
-              isRunning: false, 
-              taskDetail: null, 
-              isLoggedIn: true,
-              message: 'Erro ao iniciar tarefa',
-              messageType: 'error'
-            });
+            renderButton(false);
+            alert('Erro ao iniciar tarefa');
           }
         });
       } catch (e) {
-        isLoading = false;
-        console.log('[DEBUG] Erro no startTask:', e);
-        renderStatus({ 
-          isRunning: false, 
-          taskDetail: null, 
-          isLoggedIn: true,
-          message: 'Erro ao iniciar tarefa',
-          messageType: 'error'
-        });
+        renderButton(false);
+        alert('Erro ao iniciar tarefa');
       }
     }
 
     async function stopTask() {
-      if (!brproject || isLoading) return;
+      if (!brproject) return;
       
-      isLoading = true;
-      renderStatus({ isRunning: true, taskDetail: {}, isLoggedIn: true });
+      renderButton(true, true);
       
       brproject.pararTarefa({
         success: function(data) {
-          console.log('[DEBUG] Tarefa parada com sucesso:', data);
-          isLoading = false;
-          
-          renderStatus({ 
-            isRunning: false, 
-            taskDetail: null, 
-            isLoggedIn: true,
-            message: 'Tarefa parada!',
-            messageType: 'success'
-          });
-          
-          setTimeout(() => {
-            renderStatus({ isRunning: false, taskDetail: null, isLoggedIn: true });
-          }, 3000);
+          renderButton(false);
         },
         error: function(error) {
-          console.log('[DEBUG] Erro ao parar tarefa:', error);
-          isLoading = false;
-          renderStatus({ 
-            isRunning: true, 
-            taskDetail: {}, 
-            isLoggedIn: true,
-            message: 'Erro ao parar tarefa',
-            messageType: 'error'
-          });
+          renderButton(true);
+          alert('Erro ao parar tarefa');
         }
       });
     }
 
     async function initializeApp() {
-      console.log('[DEBUG] Card Status initializeApp iniciado');
-      
       try {
         if (typeof Brproject === 'undefined') {
-          console.log('[DEBUG] Brproject não definido, tentando novamente em 500ms');
           setTimeout(initializeApp, 500);
           return;
         }
@@ -417,61 +237,40 @@
         brproject = new Brproject();
         cardId = await getCardId();
         
-        console.log('[DEBUG] Card ID obtido:', cardId);
-        
         if (!cardId) {
-          renderStatus({ 
-            isRunning: false, 
-            taskDetail: null, 
-            isLoggedIn: false,
-            message: 'Card não identificado',
-            messageType: 'error'
-          });
+          document.getElementById('brproject-status').innerHTML = 
+            '<button class="brproject-button brproject-button-start" disabled>Card não identificado</button>';
           return;
         }
 
-        const { token, url, usuario } = await getUserData();
+        const { token, url } = await getUserData();
         const isLoggedIn = !!token && !!url;
         
         if (!isLoggedIn) {
-          renderStatus({ isRunning: false, taskDetail: null, isLoggedIn: false });
+          document.getElementById('brproject-status').innerHTML = 
+            '<button class="brproject-button brproject-button-start" disabled>Não conectado</button>';
           return;
         }
         
         brproject.token = token;
         brproject.url = url;
 
-        const { isRunning, taskDetail } = await checkTaskStatus();
-        renderStatus({ isRunning, taskDetail, isLoggedIn: true });
+        const isRunning = await checkTaskStatus();
+        renderButton(isRunning);
 
-        setupEventListeners();
+        document.addEventListener('click', function(e) {
+          if (e.target.id === 'btn-start') {
+            startTask();
+          }
+          if (e.target.id === 'btn-stop') {
+            stopTask();
+          }
+        });
         
       } catch (e) {
-        console.log('[DEBUG] Erro no Card Status initializeApp:', e);
-        renderStatus({ 
-          isRunning: false, 
-          taskDetail: null, 
-          isLoggedIn: false,
-          message: 'Erro ao carregar',
-          messageType: 'error'
-        });
+        document.getElementById('brproject-status').innerHTML = 
+          '<button class="brproject-button brproject-button-start" disabled>Erro ao carregar</button>';
       }
-    }
-
-    function setupEventListeners() {
-      const container = document.getElementById('brproject-card-status');
-      
-      container.addEventListener('click', async function(e) {
-        if (e.target.id === 'btn-start') {
-          console.log('[DEBUG] Botão iniciar clicado no card status');
-          await startTask();
-        }
-        
-        if (e.target.id === 'btn-stop') {
-          console.log('[DEBUG] Botão parar clicado no card status');
-          await stopTask();
-        }
-      });
     }
 
     if (document.readyState === 'loading') {

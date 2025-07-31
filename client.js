@@ -1,5 +1,4 @@
 console.log('client.js carregado');
-var GRAY_ICON = 'https://cdn.hyperdev.com/us-east-1%3A3d31b21c-01a0-4da2-8827-4bc6e88b7618%2Ficon-gray.svg';
 
 function checkDependencies() {
   const dependencies = [
@@ -47,28 +46,25 @@ function initializePowerUp() {
     'card-back-section': function(t, options) {
       console.log('[DEBUG] card-back-section chamado');
       
-      return Promise.all([
-        t.get('member', 'private', 'brproject-token'),
-        t.get('member', 'private', 'brproject-url')
-      ])
-      .then(function([token, url]) {
-        if (token && url) {
-          return {
-            title: 'BRProject',
-            icon: window.BRPROJECT_BASE_URL + '/images/project.png',
-            content: {
-              type: 'iframe',
-              url: window.BRPROJECT_BASE_URL + '/card-status.html',
-              height: 100
-            }
-          };
-        }
-        return null;
-      })
-      .catch(function(error) {
-        console.error('Erro ao obter seção do card:', error);
-        return null;
-      });
+      return t.get('member', 'private', 'brproject-token')
+        .then(function(token) {
+          if (token) {
+            return {
+              title: 'BRProject',
+              icon: window.BRPROJECT_BASE_URL + '/images/project.png',
+              content: {
+                type: 'iframe',
+                url: window.BRPROJECT_BASE_URL + '/card-status.html',
+                height: 60
+              }
+            };
+          }
+          return null;
+        })
+        .catch(function(error) {
+          console.error('Erro ao obter seção do card:', error);
+          return null;
+        });
     },
     
     'authorization-status': function(t, options) {
