@@ -1,4 +1,5 @@
 console.log('client.js carregado');
+var INVISIBLE_ICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cmVjdCB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9InRyYW5zcGFyZW50IiBvcGFjaXR5PSIwIi8+Cjwvc3ZnPg==';
 
 function checkDependencies() {
   const dependencies = [
@@ -51,7 +52,7 @@ function initializePowerUp() {
           if (token) {
             return {
               title: ' ',
-              icon: null,
+              icon: INVISIBLE_ICON,
               content: {
                 type: 'iframe',
                 url: t.signUrl(window.BRPROJECT_BASE_URL + '/card-status.html'),
