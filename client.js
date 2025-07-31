@@ -1,4 +1,5 @@
 console.log('client.js carregado');
+var GRAY_ICON = 'https://cdn.hyperdev.com/us-east-1%3A3d31b21c-01a0-4da2-8827-4bc6e88b7618%2Ficon-gray.svg';
 
 function checkDependencies() {
   const dependencies = [
@@ -42,106 +43,14 @@ function initializePowerUp() {
         }
       }];
     },
-    
-    'show-settings': function (t, options) {
-      console.log('show-settings inicializado');
-      return t.popup({
-        title: 'Configurações BRProject',
-        url: window.BRPROJECT_BASE_URL + '/settings.html',
-        height: 400,
-        width: 350
-      });
-    },
-    
-    'board-buttons': function (t, options) {
-      console.log('board-buttons inicializado');
-      return [{
-        icon: window.BRPROJECT_BASE_URL + '/images/project.png',
-        text: 'BRProject Dashboard',
-        callback: function (t) {
-          console.log('Board button clicado');
-          return t.popup({
-            title: 'BRProject - Painel de Controle',
-            url: window.BRPROJECT_BASE_URL + '/dashboard.html',
-            height: 600,
-            width: 500
-          });
-        }
-      }];
-    },
-    
-    'card-badges': function(t, options) {
-      return Promise.all([
-        t.get('card', 'shared', 'brproject-status'),
-        t.get('card', 'shared', 'brproject-task-name')
-      ])
-      .then(function([status, taskName]) {
-        const badges = [];
         
-        if (status === 'running') {
-          badges.push({
-            text: '⏱️ Em execução',
-            color: 'green',
-            icon: window.BRPROJECT_BASE_URL + '/images/play.png'
-          });
-        } else if (status === 'paused') {
-          badges.push({
-            text: '⏸️ Pausado',
-            color: 'yellow',
-            icon: window.BRPROJECT_BASE_URL + '/images/pause.png'
-          });
-        }
-        
-        return badges;
-      })
-      .catch(function(error) {
-        console.error('Erro ao obter badge do card:', error);
-        return [];
-      });
-    },
-    
-    'card-detail-badges': function(t, options) {
-      return Promise.all([
-        t.get('card', 'shared', 'brproject-time'),
-        t.get('card', 'shared', 'brproject-client'),
-        t.get('card', 'shared', 'brproject-project')
-      ])
-      .then(function([timeData, client, project]) {
-        const badges = [];
-        
-        if (timeData && timeData.total) {
-          badges.push({
-            title: 'Tempo Total BRProject',
-            text: timeData.total,
-            color: 'blue',
-            icon: window.BRPROJECT_BASE_URL + '/images/timer.png'
-          });
-        }
-        
-        if (client && project) {
-          badges.push({
-            title: 'Cliente/Projeto',
-            text: `${client} - ${project}`,
-            color: 'purple',
-            icon: window.BRPROJECT_BASE_URL + '/images/client.png'
-          });
-        }
-        
-        return badges;
-      })
-      .catch(function(error) {
-        console.error('Erro ao obter detalhes do card:', error);
-        return [];
-      });
-    },
-    
     'card-back-section': function(t, options) {
       return t.get('card', 'shared', 'brproject-status')
         .then(function(status) {
           if (status === 'running') {
             return {
-              title: 'BRProject - Tarefa em Execução',
-              icon: window.BRPROJECT_BASE_URL + '/images/timer.png',
+              title: 'Parar',
+              icon: GRAY_ICON,
               content: {
                 type: 'iframe',
                 url: window.BRPROJECT_BASE_URL + '/card-status.html',
@@ -155,20 +64,6 @@ function initializePowerUp() {
           console.error('Erro ao obter seção do card:', error);
           return null;
         });
-    },
-    
-    'list-actions': function(t, options) {
-      return [{
-        text: 'Relatório BRProject',
-        callback: function(t) {
-          return t.popup({
-            title: 'Relatório da Lista',
-            url: window.BRPROJECT_BASE_URL + '/list-report.html',
-            height: 400,
-            width: 500
-          });
-        }
-      }];
     },
     
     'authorization-status': function(t, options) {
