@@ -6,7 +6,7 @@
     "url": "https://brproject.vercel.app/images/project.png"
   },
   "capabilities": [
-    "card-buttons",
+    "board-buttons",
     "card-back-section",
     "authorization-status"
   ],

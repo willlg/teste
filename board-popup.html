@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>BRProject - Controle de Tarefas</title>
+  <link rel="stylesheet" href="https://brproject.vercel.app/css/brproject.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background-color: #f8f9fa;
+      color: #333;
+      min-height: 400px;
+    }
+    
+    .brproject-container {
+      max-width: 100%;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    
+    .brproject-header {
+      background: linear-gradient(135deg, #0079bf 0%, #005a8b 100%);
+      color: white;
+      padding: 16px;
+      text-align: center;
+      position: relative;
+    }
+    
+    .brproject-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .brproject-header .version {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-size: 10px;
+      opacity: 0.8;
+    }
+    
+    .brproject-content {
+      padding: 16px;
+    }
+    
+    .brproject-board-info {
+      background: #f4f5f7;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .brproject-board-info strong {
+      color: #0079bf;
+      font-weight: 600;
+    }
+    
+    .brproject-board-info .board-name {
+      font-size: 14px;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    
+    .brproject-status {
+      margin-bottom: 16px;
+    }
+    
+    .brproject-status-running {
+      background: #e8f5e9;
+      border: 1px solid #4caf50;
+      border-radius: 6px;
+      padding: 12px;
+      color: #2e7d32;
+    }
+    
+    .brproject-status-running .status-icon {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #4caf50;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    
+    .brproject-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .brproject-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      min-height: 20px;
+    }
+    
+    .brproject-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .brproject-button-primary {
+      background: #0079bf;
+      color: white;
+    }
+    
+    .brproject-button-primary:hover:not(:disabled) {
+      background: #005a8b;
+    }
+    
+    .brproject-button-danger {
+      background: #f44336;
+      color: white;
+    }
+    
+    .brproject-button-danger:hover:not(:disabled) {
+      background: #d32f2f;
+    }
+    
+    .brproject-button-secondary {
+      background: #f8f9fa;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+    
+    .brproject-button-secondary:hover:not(:disabled) {
+      background: #e9ecef;
+    }
+    
+    .brproject-loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #0079bf;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .brproject-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .brproject-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .brproject-form-group label {
+      font-weight: 500;
+      color: #333;
+      font-size: 12px;
+    }
+    
+    .brproject-form-group input {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .brproject-form-group input:focus {
+      outline: none;
+      border-color: #0079bf;
+      box-shadow: 0 0 0 2px rgba(0, 121, 191, 0.1);
+    }
+    
+    .brproject-feedback {
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    
+    .brproject-feedback-success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #4caf50;
+    }
+    
+    .brproject-feedback-error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #f44336;
+    }
+    
+    .brproject-user-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 8px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .brproject-logout-confirm {
+      text-align: center;
+      padding: 16px;
+    }
+    
+    .brproject-logout-confirm .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+    
+    .brproject-task-details {
+      background: #e8f5e9;
+      border: 1px solid #4caf50;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .brproject-task-details h4 {
+      margin: 0 0 8px 0;
+      color: #2e7d32;
+      font-size: 14px;
+    }
+    
+    .brproject-task-details .detail-row {
+      display: flex;
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+    
+    .brproject-task-details .detail-label {
+      font-weight: 500;
+      width: 80px;
+      color: #2e7d32;
+    }
+    
+    .brproject-task-details .detail-value {
+      flex: 1;
+      color: #333;
+    }
+    
+    .brproject-footer {
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border-top: 1px solid #e0e0e0;
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+    }
+
+    .brproject-running-tasks {
+      margin-bottom: 16px;
+    }
+
+    .brproject-running-task {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .brproject-running-task .task-info {
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .brproject-running-task .task-name {
+      font-weight: bold;
+      color: #856404;
+    }
+
+    .brproject-running-task .task-card {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .brproject-running-task .task-actions {
+      display: flex;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="brproject-container">
+    <div class="brproject-header">
+      <h3>BRProject</h3>
+      <div class="version">v2.0</div>
+    </div>
+    
+    <div class="brproject-content">
+      <div id="brproject-root">
+        <div class="brproject-loading" style="margin: 20px auto; display: block;"></div>
+        <div style="text-align: center; color: #666; margin-top: 8px;">Carregando...</div>
+      </div>
+    </div>
+    
+    <div class="brproject-footer">
+      BRProject - Controle de Tempo para Trello
+    </div>
+  </div>
+
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <script src="config.js"></script>
+  <script src="vendor/jquery.min.js"></script>
+  <script src="vendor/md5.js"></script>
+  <script src="brproject.js"></script>
+  <script>
+    console.log('[DEBUG] jQuery:', typeof $);
+    console.log('[DEBUG] Brproject:', typeof Brproject);
+    
+    window.onerror = function(msg, url, line, col, error) {
+      console.log('[DEBUG] window.onerror:', msg, url, line, col, error);
+    };
+
+    let t;
+    let boardId = null;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('[DEBUG] DOM Ready');
+      initializePowerUp();
+    });
+
+    function initializePowerUp() {
+      try {
+        console.log('[DEBUG] Antes do TrelloPowerUp.iframe');
+        t = window.TrelloPowerUp.iframe();
+        console.log('[DEBUG] Depois do TrelloPowerUp.iframe, t:', t);
+        
+        t.render(function() {
+          console.log('[DEBUG] Trello render callback executado');
+          return initializeApp();
+        });
+        
+      } catch (e) {
+        console.log('[DEBUG] Erro ao chamar TrelloPowerUp.iframe:', e);
+        setTimeout(initializeApp, 1000);
+      }
+    }
+
+    async function getUserData() {
+      try {
+        if (!t) {
+          console.log('[DEBUG] t não disponível em getUserData');
+          return { token: null, url: null, usuario: null };
+        }
+        
+        const token = await t.get('member', 'private', 'brproject-token');
+        const url = await t.get('member', 'private', 'brproject-url');
+        const usuario = await t.get('member', 'private', 'brproject-usuario');
+        
+        return { token, url, usuario };
+      } catch (e) {
+        console.log('[DEBUG] Erro em getUserData:', e);
+        return { token: null, url: null, usuario: null };
+      }
+    }
+
+    async function setUserData(token, url, usuario) {
+      try {
+        if (!t) {
+          console.log('[DEBUG] t não disponível em setUserData');
+          return;
+        }
+        
+        await t.set('member', 'private', 'brproject-token', token);
+        await t.set('member', 'private', 'brproject-url', url);
+        await t.set('member', 'private', 'brproject-usuario', usuario);
+      } catch (e) {
+        console.log('[DEBUG] Erro em setUserData:', e);
+      }
+    }
+
+    async function clearUserData() {
+      try {
+        if (!t) {
+          console.log('[DEBUG] t não disponível em clearUserData');
+          return;
+        }
+        
+        await t.remove('member', 'private', 'brproject-token');
+        await t.remove('member', 'private', 'brproject-url');
+        await t.remove('member', 'private', 'brproject-usuario');
+      } catch (e) {
+        console.log('[DEBUG] Erro em clearUserData:', e);
+      }
+    }
+
+    async function getBoardId() {
+      try {
+        if (!t) {
+          console.log('[DEBUG] t não disponível em getBoardId');
+          return null;
+        }
+        
+        const context = await t.getContext();
+        console.log('[DEBUG] Context:', context);
+        
+        if (context && context.board) {
+          console.log('[DEBUG] Board ID do context:', context.board);
+          return context.board;
+        }
+        
+        console.log('[DEBUG] Nenhum método conseguiu obter o board ID');
+        return null;
+        
+      } catch (e) {
+        console.log('[DEBUG] Erro em getBoardId:', e);
+        return null;
+      }
+    }
+
+    async function getBoardData() {
+      try {
+        if (!t || !boardId) {
+          console.log('[DEBUG] t ou boardId não disponível em getBoardData');
+          return null;
+        }
+        
+        const board = await t.board('id', 'name', 'desc', 'url');
+        console.log('[DEBUG] Dados do board:', board);
+        return board;
+        
+      } catch (e) {
+        console.log('[DEBUG] Erro em getBoardData:', e);
+        return null;
+      }
+    }
+
+    function renderUI({ logado, tarefasEmAndamento, usuario, feedback, boardData }) {
+      console.log('[DEBUG] renderUI chamado:', { logado, tarefasEmAndamento, usuario, feedback, boardData });
+      
+      let html = '';
+      
+      if (boardData) {
+        html += `<div class="brproject-board-info">
+          <strong>Board:</strong> 
+          <div class="board-name">${boardData.name || 'N/A'}</div>
+        </div>`;
+      }
+      
+      if (feedback) {
+        html += `<div class="brproject-feedback brproject-feedback-${feedback.type}">${feedback.msg}</div>`;
+      }
+      
+      if (!logado) {
+        html += `<button id="btn-login" class="brproject-button brproject-button-primary">Login no BRProject</button>`;
+      } else {
+        html += `
+          <div class="brproject-user-info">
+            <span>Olá, ${usuario && usuario.email ? usuario.email : ''}</span>
+            <button id="btn-logout" class="brproject-button brproject-button-secondary" style="padding: 4px 8px; font-size: 11px;">Sair</button>
+          </div>
+        `;
+
+        if (tarefasEmAndamento && tarefasEmAndamento.length > 0) {
+          html += `<div class="brproject-running-tasks">
+            <h4 style="margin: 0 0 8px 0; color: #856404;">Tarefas em Andamento:</h4>`;
+          
+          tarefasEmAndamento.forEach(tarefa => {
+            html += `
+              <div class="brproject-running-task">
+                <div class="task-info">
+                  <div class="task-name">${tarefa.nome || 'Tarefa sem nome'}</div>
+                  <div class="task-card">Card: ${tarefa.referencia_id || 'N/A'}</div>
+                  <div style="font-size: 11px; color: #666;">Iniciado: ${tarefa.data_inicio || 'N/A'}</div>
+                </div>
+                <div class="task-actions">
+                  <button class="btn-parar-tarefa brproject-button brproject-button-danger" data-tarefa-id="${tarefa.idtarefa}" style="padding: 6px 12px; font-size: 12px;">
+                    Parar
+                  </button>
+                </div>
+              </div>
+            `;
+          });
+          
+          html += `</div>`;
+        } else {
+          html += `<div style="text-align: center; padding: 20px; color: #666; font-style: italic;">
+            Nenhuma tarefa em andamento no momento.
+          </div>`;
+        }
+      }
+      
+      const root = document.getElementById('brproject-root');
+      if (root) {
+        root.innerHTML = html;
+      } else {
+        console.log('[DEBUG] Elemento brproject-root não encontrado');
+      }
+    }
+
+    function renderLogoutConfirm(usuario) {
+      const root = document.getElementById('brproject-root');
+      if (root) {
+        root.innerHTML = `
+          <div class="brproject-logout-confirm">
+            <div style="margin-bottom:16px;">Olá, ${usuario && usuario.email ? usuario.email : ''}</div>
+            <div style="margin-bottom:16px;">Tem certeza que deseja sair do BRProject?</div>
+            <div class="actions">
+              <button id="btn-logout-sim" class="brproject-button brproject-button-danger">Sim</button>
+              <button id="btn-logout-nao" class="brproject-button brproject-button-secondary">Não</button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    async function initializeApp() {
+      console.log('[DEBUG] initializeApp iniciado');
+      
+      try {
+        if (typeof Brproject === 'undefined') {
+          console.log('[DEBUG] Brproject não definido, tentando novamente em 500ms');
+          setTimeout(initializeApp, 500);
+          return;
+        }
+
+        console.log('[DEBUG] Antes do new Brproject');
+        var brproject = new Brproject();
+        console.log('[DEBUG] Depois do new Brproject');
+        
+        boardId = await getBoardId();
+        console.log('[DEBUG] Board ID obtido:', boardId);
+        
+        const boardData = await getBoardData();
+        console.log('[DEBUG] Dados do board obtidos:', boardData);
+
+        let { token, url, usuario } = await getUserData();
+        console.log('[DEBUG] Dados do usuário:', { token: !!token, url: !!url, usuario });
+        
+        brproject.token = token;
+        brproject.url = url;
+
+        let logado = !!token && !!url;
+        let tarefasEmAndamento = [];
+        let feedback = null;
+
+        console.log('[DEBUG] Estado inicial:', { logado, boardId });
+
+        if (logado) {
+          console.log('[DEBUG] Verificando tarefas em andamento...');
+          await brproject.getUltimaTarefa({
+            success: function(data) {
+              console.log('[DEBUG] getUltimaTarefa sucesso:', data);
+              if (data.success && data.data.atividade.finalizada != 1) {
+                tarefasEmAndamento = [{
+                  idtarefa: data.data.atividade.tarefa.idtarefa,
+                  nome: data.data.atividade.tarefa.nome,
+                  descricao: data.data.atividade.tarefa.descricao,
+                  referencia_id: data.data.atividade.tarefa.referencia_id,
+                  data_inicio: data.data.atividade.data_inicio
+                }];
+              }
+              console.log('[DEBUG] Renderizando UI após getUltimaTarefa');
+              renderUI({ logado, tarefasEmAndamento, usuario, feedback, boardData });
+            },
+            error: function(error) {
+              console.log('[DEBUG] getUltimaTarefa erro:', error);
+              renderUI({ logado, tarefasEmAndamento, usuario, feedback, boardData });
+            }
+          });
+        } else {
+          console.log('[DEBUG] Renderizando UI inicial');
+          renderUI({ logado, tarefasEmAndamento, usuario, feedback, boardData });
+        }
+
+        setupEventListeners(brproject, boardId, boardData);
+        
+      } catch (e) {
+        console.log('[DEBUG] Erro no initializeApp:', e);
+        renderUI({ 
+          logado: false, 
+          tarefasEmAndamento: [], 
+          usuario: null, 
+          feedback: {type:'error', msg:'Erro ao inicializar aplicação'},
+          boardData: null
+        });
+      }
+    }
+
+    function setupEventListeners(brproject, boardId, boardData) {
+      console.log('[DEBUG] Configurando event listeners');
+      
+      const root = document.getElementById('brproject-root');
+      if (!root) {
+        console.log('[DEBUG] Root não encontrado para event listeners');
+        return;
+      }
+
+      root.addEventListener('click', async function(e) {
+        const target = e.target;
+        console.log('[DEBUG] Click detectado em:', target.id, target.className);
+
+        if (target.id === 'btn-login') {
+          console.log('[DEBUG] Botão login clicado');
+          root.innerHTML = `
+            <form id="brproject-form-login" class="brproject-form">
+              <div class="brproject-form-group">
+                <label>URL</label>
+                <input id="brproject-url" name="url" value="https://www2.projetos.brsis.com.br/brproject" type="text" autocomplete="off" />
+              </div>
+              <div class="brproject-form-group">
+                <label>E-mail</label>
+                <input id="brproject-email" name="email" type="email" autocomplete="off" />
+              </div>
+              <div class="brproject-form-group">
+                <label>Senha</label>
+                <input id="brproject-senha" name="senha" type="password" autocomplete="off" />
+              </div>
+              <button class="brproject-button brproject-button-primary js-save-changes" type="submit">Entrar</button>
+              <p class="error" style="color:red; margin:8px 0 0 0; font-size:12px;"></p>
+            </form>
+          `;
+        }
+
+        if (target.id === 'btn-logout') {
+          console.log('[DEBUG] Botão logout clicado');
+          const { token, url, usuario } = await getUserData();
+          renderLogoutConfirm(usuario);
+        }
+
+        if (target.id === 'btn-logout-nao') {
+          console.log('[DEBUG] Logout cancelado');
+          location.reload(); 
+        }
+
+        if (target.id === 'btn-logout-sim') {
+          console.log('[DEBUG] Logout confirmado');
+          await clearUserData();
+          brproject.token = null;
+          brproject.url = null;
+          renderUI({ 
+            logado: false, 
+            tarefasEmAndamento: [], 
+            usuario: null, 
+            feedback: {type:'success',msg:'Logout realizado com sucesso!'},
+            boardData: null
+          });
+        }
+
+        if (target.classList.contains('btn-parar-tarefa')) {
+          console.log('[DEBUG] Botão parar tarefa clicado');
+          const tarefaId = target.getAttribute('data-tarefa-id');
+          
+          target.disabled = true;
+          target.innerHTML = '<span class="brproject-loading"></span>Parando...';
+          
+          brproject.pararTarefa({
+            success: function(data) {
+              console.log('[DEBUG] Tarefa parada com sucesso:', data);
+              renderUI({ 
+                logado: true, 
+                tarefasEmAndamento: [], 
+                usuario: null, 
+                feedback: {type:'success',msg:'Tarefa parada!'},
+                boardData: boardData
+              });
+            },
+            error: function(error) {
+              console.log('[DEBUG] Erro ao parar tarefa:', error);
+              target.disabled = false;
+              target.innerHTML = 'Parar';
+              renderUI({ 
+                logado: true, 
+                tarefasEmAndamento: [], 
+                usuario: null, 
+                feedback: {type:'error',msg: 'Erro ao parar tarefa'},
+                boardData: boardData
+              });
+            }
+          });
+        }
+      });
+
+      root.addEventListener('submit', async function(e) {
+        if (e.target.id === 'brproject-form-login') {
+          e.preventDefault();
+          console.log('[DEBUG] Form login submetido');
+          
+          const url = document.getElementById('brproject-url').value;
+          const email = document.getElementById('brproject-email').value;
+          const senha = document.getElementById('brproject-senha').value;
+          const data_form = { url, email, senha };
+
+          const submitBtn = document.querySelector('#brproject-form-login .js-save-changes');
+          const errorEl = document.querySelector('#brproject-form-login .error');
+          
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="brproject-loading"></span>Entrando...';
+          errorEl.textContent = '';
+
+          brproject.gerarToken(data_form, {
+            success: async function(data) {
+              console.log('[DEBUG] Token gerado com sucesso:', data);
+              if (data.success) {
+                await setUserData(data.data.token, url, data.data.usuario);
+                brproject.token = data.data.token;
+                brproject.url = url;
+                
+                await brproject.getUltimaTarefa({
+                  success: function(taskData) {
+                    let tarefasEmAndamento = [];
+                    if (taskData.success && taskData.data.atividade.finalizada != 1) {
+                      tarefasEmAndamento = [{
+                        idtarefa: taskData.data.atividade.tarefa.idtarefa,
+                        nome: taskData.data.atividade.tarefa.nome,
+                        descricao: taskData.data.atividade.tarefa.descricao,
+                        referencia_id: taskData.data.atividade.tarefa.referencia_id,
+                        data_inicio: taskData.data.atividade.data_inicio
+                      }];
+                    }
+                    
+                    renderUI({ 
+                      logado: true, 
+                      tarefasEmAndamento, 
+                      usuario: data.data.usuario, 
+                      feedback: {type:'success',msg:'Login realizado com sucesso!'},
+                      boardData: boardData
+                    });
+                  },
+                  error: function(error) {
+                    renderUI({ 
+                      logado: true, 
+                      tarefasEmAndamento: [], 
+                      usuario: data.data.usuario, 
+                      feedback: {type:'success',msg:'Login realizado com sucesso!'},
+                      boardData: boardData
+                    });
+                  }
+                });
+              } else {
+                errorEl.textContent = data.message || 'Erro ao autenticar';
+              }
+            },
+            error: function(error) {
+              console.log('[DEBUG] Erro ao gerar token:', error);
+              errorEl.textContent = 'Erro ao autenticar';
+            },
+            complete: function() {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Entrar';
+            }
+          });
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializePowerUp);
+    } else {
+      initializePowerUp();
+    }
+  </script>
+</body>
+</html>

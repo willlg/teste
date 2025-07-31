@@ -27,16 +27,16 @@ function initializePowerUp() {
   console.log('Base URL:', window.BRPROJECT_BASE_URL);
   
   window.TrelloPowerUp.initialize({
-    'card-buttons': function (t, options) {
-      console.log('card-buttons inicializado');
+    'board-buttons': function (t, options) {
+      console.log('board-buttons inicializado');
       return [{
         icon: window.BRPROJECT_BASE_URL + '/images/project.png',
         text: 'BRProject',
         callback: function (t) {
-          console.log('Card button clicado');
+          console.log('Board button clicado');
           return t.popup({
             title: 'BRProject - Controle de Tarefas',
-            url: window.BRPROJECT_BASE_URL + '/popup.html',
+            url: window.BRPROJECT_BASE_URL + '/board-popup.html',
             height: 500,
             width: 380
           });
