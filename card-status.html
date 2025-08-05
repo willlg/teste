@@ -15,15 +15,15 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 6px 12px;
+      padding: 4px 8px;
       border: none;
-      border-radius: 4px;
-      font-size: 12px;
+      border-radius: 3px;
+      font-size: 11px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
       width: 100%;
-      min-height: 24px;
+      min-height: 20px;
       margin-bottom: 2px;
     }
     
@@ -65,15 +65,15 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 6px 12px;
+      padding: 4px 8px;
       border: none;
-      border-radius: 4px;
-      font-size: 12px;
+      border-radius: 3px;
+      font-size: 11px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
       width: 100%;
-      min-height: 24px;
+      min-height: 20px;
       margin-bottom: 4px;
       background: #00875a;
       color: white;
@@ -205,60 +205,169 @@
       if (cardId) {
         editButtonElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/update/${cardId}`;
         editButtonElement.style.display = 'inline-flex';
+        
+        fetchTaskInfo(cardId);
       }
       
-      if (data && data.success && data.data) {
-        console.log('[DEBUG] Dados recebidos:', data.data); 
-        
-        let clienteNome = 'Não informado';
-        let projetoNome = 'Não informado';
-        
-        if (data.data.atividade && data.data.atividade.tarefa) {
-          const tarefa = data.data.atividade.tarefa;
-          
-          if (tarefa.cliente) {
-            if (typeof tarefa.cliente === 'string') {
-              clienteNome = tarefa.cliente;
-            } else if (tarefa.cliente.nome) {
-              clienteNome = tarefa.cliente.nome;
+      infoContainer.style.display = 'block';
+    }
+
+    function fetchTaskInfo(taskId) {
+      if (!brproject || !brproject.url || !brproject.token) return;
+      
+      const filter = [{
+        property: 'referencia_id',
+        value: taskId,
+        operator: '='
+      }];
+      
+      const url = brproject.url + '/api/tarefa?' + 
+                  'filter=' + encodeURIComponent(JSON.stringify(filter)) +
+                  '&token=' + encodeURIComponent(brproject.token);
+      
+      if (typeof $ === 'undefined') {
+        fetch(url)
+          .then(response => response.json())
+          .then(data => {
+            console.log('[DEBUG] Dados da tarefa:', data);
+            if (data.success && data.data && data.data.tarefa && data.data.tarefa.length > 0) {
+              const tarefa = data.data.tarefa[0];
+              if (tarefa.idcliente) {
+                fetchClienteInfo(tarefa.idcliente);
+              }
+              if (tarefa.idprojeto) {
+                fetchProjetoInfo(tarefa.idprojeto);
+              }
+            } else {
+              document.getElementById('cliente-nome').textContent = 'Não informado';
+              document.getElementById('projeto-nome').textContent = 'Não informado';
             }
-          }
-          
-          // Projeto
-          if (tarefa.projeto) {
-            if (typeof tarefa.projeto === 'string') {
-              projetoNome = tarefa.projeto;
-            } else if (tarefa.projeto.nome) {
-              projetoNome = tarefa.projeto.nome;
-            }
-          }
-        }
-        
-        if (data.data.cliente) {
-          if (typeof data.data.cliente === 'string') {
-            clienteNome = data.data.cliente;
-          } else if (data.data.cliente.nome) {
-            clienteNome = data.data.cliente.nome;
-          }
-        }
-        
-        if (data.data.projeto) {
-          if (typeof data.data.projeto === 'string') {
-            projetoNome = data.data.projeto;
-          } else if (data.data.projeto.nome) {
-            projetoNome = data.data.projeto.nome;
-          }
-        }
-        
-        clienteElement.textContent = clienteNome;
-        projetoElement.textContent = projetoNome;
-        infoContainer.style.display = 'block';
-        
-        console.log('[DEBUG] Cliente:', clienteNome, 'Projeto:', projetoNome); // Para debug
+          })
+          .catch(error => {
+            console.log('[DEBUG] Erro ao buscar tarefa:', error);
+            document.getElementById('cliente-nome').textContent = 'Não informado';
+            document.getElementById('projeto-nome').textContent = 'Não informado';
+          });
       } else {
-        clienteElement.textContent = 'Não informado';
-        projetoElement.textContent = 'Não informado';
-        infoContainer.style.display = 'block';
+        $.ajax({
+          url: brproject.url + '/api/tarefa',
+          method: 'GET',
+          data: {
+            filter: JSON.stringify(filter),
+            token: brproject.token
+          },
+          dataType: 'json',
+          success: function(response) {
+            console.log('[DEBUG] Dados da tarefa:', response);
+            if (response.success && response.data && response.data.tarefa && response.data.tarefa.length > 0) {
+              const tarefa = response.data.tarefa[0];
+              if (tarefa.idcliente) {
+                fetchClienteInfo(tarefa.idcliente);
+              }
+              if (tarefa.idprojeto) {
+                fetchProjetoInfo(tarefa.idprojeto);
+              }
+            } else {
+              document.getElementById('cliente-nome').textContent = 'Não informado';
+              document.getElementById('projeto-nome').textContent = 'Não informado';
+            }
+          },
+          error: function(error) {
+            console.log('[DEBUG] Erro ao buscar tarefa:', error);
+            document.getElementById('cliente-nome').textContent = 'Não informado';
+            document.getElementById('projeto-nome').textContent = 'Não informado';
+          }
+        });
+      }
+    }
+
+    function fetchClienteInfo(idCliente) {
+      if (!brproject || !brproject.url || !brproject.token) return;
+      
+      const filter = [{
+        property: 'idcliente',
+        value: idCliente,
+        operator: '='
+      }];
+      
+      const url = brproject.url + '/api/cliente?' + 
+                  'filter=' + encodeURIComponent(JSON.stringify(filter)) +
+                  '&token=' + encodeURIComponent(brproject.token);
+      
+      if (typeof $ === 'undefined') {
+        fetch(url)
+          .then(response => response.json())
+          .then(data => {
+            if (data.success && data.data && data.data.cliente && data.data.cliente.length > 0) {
+              const cliente = data.data.cliente[0];
+              document.getElementById('cliente-nome').textContent = cliente.nome;
+            }
+          })
+          .catch(error => console.log('[DEBUG] Erro ao buscar cliente:', error));
+      } else {
+        $.ajax({
+          url: brproject.url + '/api/cliente',
+          method: 'GET',
+          data: {
+            filter: JSON.stringify(filter),
+            token: brproject.token
+          },
+          dataType: 'json',
+          success: function(response) {
+            if (response.success && response.data && response.data.cliente && response.data.cliente.length > 0) {
+              const cliente = response.data.cliente[0];
+              document.getElementById('cliente-nome').textContent = cliente.nome;
+            }
+          },
+          error: function(error) {
+            console.log('[DEBUG] Erro ao buscar cliente:', error);
+          }
+        });
+      }
+    }
+
+    function fetchProjetoInfo(idProjeto) {
+      if (!brproject || !brproject.url || !brproject.token) return;
+      
+      const filter = [{
+        property: 'idprojeto',
+        value: idProjeto,
+        operator: '='
+      }];
+      
+      const url = brproject.url + '/api/projeto?' + 
+                  'filter=' + encodeURIComponent(JSON.stringify(filter)) +
+                  '&token=' + encodeURIComponent(brproject.token);
+      
+      if (typeof $ === 'undefined') {
+        fetch(url)
+          .then(response => response.json())
+          .then(data => {
+            if (data.success && data.data && data.data.projeto && data.data.projeto.length > 0) {
+              const projeto = data.data.projeto[0];
+              document.getElementById('projeto-nome').textContent = projeto.nome;
+            }
+          })
+          .catch(error => console.log('[DEBUG] Erro ao buscar projeto:', error));
+      } else {
+        $.ajax({
+          url: brproject.url + '/api/projeto',
+          method: 'GET',
+          data: {
+            filter: JSON.stringify(filter),
+            token: brproject.token
+          },
+          dataType: 'json',
+          success: function(response) {
+            if (response.success && response.data && response.data.projeto && response.data.projeto.length > 0) {
+              const projeto = response.data.projeto[0];
+              document.getElementById('projeto-nome').textContent = projeto.nome;
+            }
+          },
+          error: function(error) {
+            console.log('[DEBUG] Erro ao buscar projeto:', error);
+          }
+        });
       }
     }
 
@@ -287,7 +396,6 @@
         brproject.getUltimaTarefa({
           success: function(data) {
             taskData = data; 
-            updateTaskInfo(data); 
             
             if (data.success && 
                 data.data && 
@@ -302,11 +410,16 @@
           },
           error: function(error) {
             console.log('[DEBUG] Erro ao buscar tarefa:', error);
-            updateTaskInfo(null); 
             resolve(false);
           }
         });
       });
+    }
+
+    async function loadTaskInfo() {
+      if (cardId && brproject) {
+        updateTaskInfo(); 
+      }
     }
 
     async function startTask() {
@@ -329,7 +442,10 @@
           success: function(data) {
             if (data.success) {
               renderButton(true);
-              setTimeout(() => checkTaskStatus(), 1000);
+              setTimeout(() => {
+                checkTaskStatus();
+                loadTaskInfo();
+              }, 1000);
             } else {
               renderButton(false);
               alert('Erro ao iniciar tarefa: ' + (data.message || ''));
@@ -354,8 +470,10 @@
       brproject.pararTarefa({
         success: function(data) {
           renderButton(false);
-          // Recarregar informações da tarefa após parar
-          setTimeout(() => checkTaskStatus(), 1000);
+          setTimeout(() => {
+            checkTaskStatus();
+            loadTaskInfo();
+          }, 1000);
         },
         error: function(error) {
           renderButton(true);
@@ -394,6 +512,8 @@
 
         const isRunning = await checkTaskStatus();
         renderButton(isRunning);
+        
+        await loadTaskInfo();
 
         document.addEventListener('click', function(e) {
           if (e.target.id === 'btn-start') {
