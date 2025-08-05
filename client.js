@@ -56,7 +56,7 @@ function initializePowerUp() {
               content: {
                 type: 'iframe',
                 url: t.signUrl(window.BRPROJECT_BASE_URL + '/card-status.html'),
-                height: 60
+                height: 120
               }
             };
           }
