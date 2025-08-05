@@ -60,6 +60,31 @@
       margin-right: 6px;
     }
     
+    .brproject-edit-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+      min-height: 24px;
+      margin-top: 4px;
+      background: #00875a;
+      color: white;
+      text-decoration: none;
+    }
+    
+    .brproject-edit-button:hover {
+      background: #006644;
+      text-decoration: none;
+      color: white;
+    }
+    
     .brproject-info {
       margin-top: 8px;
       padding: 6px;
@@ -79,24 +104,6 @@
       color: #42526e;
     }
     
-    .brproject-edit-link {
-      display: inline-block;
-      margin-top: 4px;
-      padding: 4px 8px;
-      background: #00875a;
-      color: white;
-      text-decoration: none;
-      border-radius: 3px;
-      font-size: 10px;
-      transition: background 0.2s ease;
-    }
-    
-    .brproject-edit-link:hover {
-      background: #006644;
-      text-decoration: none;
-      color: white;
-    }
-    
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -108,6 +115,10 @@
     <button class="brproject-button brproject-button-start" disabled>Carregando...</button>
   </div>
   
+  <a id="edit-button" href="#" class="brproject-edit-button" target="_blank" style="display: none;">
+    Editar Tarefa
+  </a>
+  
   <div id="brproject-info" class="brproject-info" style="display: none;">
     <div class="brproject-info-item">
       <span class="brproject-info-label">Cliente:</span> 
@@ -117,9 +128,6 @@
       <span class="brproject-info-label">Projeto:</span> 
       <span id="projeto-nome">-</span>
     </div>
-    <a id="edit-link" href="#" class="brproject-edit-link" target="_blank" style="display: none;">
-      Editar Tarefa
-    </a>
   </div>
 
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
@@ -191,42 +199,64 @@
       const infoContainer = document.getElementById('brproject-info');
       const clienteElement = document.getElementById('cliente-nome');
       const projetoElement = document.getElementById('projeto-nome');
-      const editLinkElement = document.getElementById('edit-link');
+      const editButtonElement = document.getElementById('edit-button');
+      
+      if (cardId) {
+        editButtonElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/update/${cardId}`;
+        editButtonElement.style.display = 'inline-flex';
+      }
       
       if (data && data.success && data.data) {
-        const taskInfo = data.data;
+        console.log('[DEBUG] Dados recebidos:', data.data);
         
-        if (taskInfo.cliente && taskInfo.cliente.nome) {
-          clienteElement.textContent = taskInfo.cliente.nome;
-        } else if (taskInfo.atividade && taskInfo.atividade.tarefa && taskInfo.atividade.tarefa.cliente) {
-          clienteElement.textContent = taskInfo.atividade.tarefa.cliente.nome || taskInfo.atividade.tarefa.cliente;
-        } else {
-          clienteElement.textContent = 'Não informado';
+        let clienteNome = 'Não informado';
+        let projetoNome = 'Não informado';
+        
+        if (data.data.atividade && data.data.atividade.tarefa) {
+          const tarefa = data.data.atividade.tarefa;
+          
+          if (tarefa.cliente) {
+            if (typeof tarefa.cliente === 'string') {
+              clienteNome = tarefa.cliente;
+            } else if (tarefa.cliente.nome) {
+              clienteNome = tarefa.cliente.nome;
+            }
+          }
+          
+          if (tarefa.projeto) {
+            if (typeof tarefa.projeto === 'string') {
+              projetoNome = tarefa.projeto;
+            } else if (tarefa.projeto.nome) {
+              projetoNome = tarefa.projeto.nome;
+            }
+          }
         }
         
-        if (taskInfo.projeto && taskInfo.projeto.nome) {
-          projetoElement.textContent = taskInfo.projeto.nome;
-        } else if (taskInfo.atividade && taskInfo.atividade.tarefa && taskInfo.atividade.tarefa.projeto) {
-          projetoElement.textContent = taskInfo.atividade.tarefa.projeto.nome || taskInfo.atividade.tarefa.projeto;
-        } else {
-          projetoElement.textContent = 'Não informado';
+        if (data.data.cliente) {
+          if (typeof data.data.cliente === 'string') {
+            clienteNome = data.data.cliente;
+          } else if (data.data.cliente.nome) {
+            clienteNome = data.data.cliente.nome;
+          }
         }
         
-        if (cardId) {
-          editLinkElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/update/${cardId}`;
-          editLinkElement.style.display = 'inline-block';
+        if (data.data.projeto) {
+          if (typeof data.data.projeto === 'string') {
+            projetoNome = data.data.projeto;
+          } else if (data.data.projeto.nome) {
+            projetoNome = data.data.projeto.nome;
+          }
         }
         
+        clienteElement.textContent = clienteNome;
+        projetoElement.textContent = projetoNome;
         infoContainer.style.display = 'block';
+        
+        console.log('[DEBUG] Cliente:', clienteNome, 'Projeto:', projetoNome); // Para debug
       } else {
         clienteElement.textContent = 'Não informado';
         projetoElement.textContent = 'Não informado';
-        
-        if (cardId) {
-          editLinkElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/update/${cardId}`;
-          editLinkElement.style.display = 'inline-block';
-          infoContainer.style.display = 'block';
-        }
+        infoContainer.style.display = 'block';
       }
     }
 
@@ -258,7 +288,10 @@
             updateTaskInfo(data); 
             
             if (data.success && 
+                data.data && 
+                data.data.atividade &&
                 data.data.atividade.finalizada != 1 && 
+                data.data.atividade.tarefa &&
                 data.data.atividade.tarefa.referencia_id == cardId) {
               resolve(true);
             } else {
@@ -266,7 +299,8 @@
             }
           },
           error: function(error) {
-            updateTaskInfo(null); 
+            console.log('[DEBUG] Erro ao buscar tarefa:', error);
+            updateTaskInfo(null);
             resolve(false);
           }
         });
