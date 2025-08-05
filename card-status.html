@@ -211,9 +211,9 @@
     }
 
     function fetchTaskInfo(taskId) {
-      if (!brproject || !brproject.url) return;
+      if (!brproject || !brproject.url || !brproject.token) return;
       
-      const url = `https://www2.projetos.brsis.com.br/brproject/api/tarefa/referencia/${taskId}`;
+      const url = `https://www2.projetos.brsis.com.br/brproject/api/tarefa/referencia/${taskId}?token=${encodeURIComponent(brproject.token)}`;
       
       if (typeof $ === 'undefined') {
         fetch(url)
