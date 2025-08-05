@@ -15,15 +15,16 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 6px 12px;
+      padding: 4px 8px;
       border: none;
-      border-radius: 4px;
-      font-size: 12px;
+      border-radius: 3px;
+      font-size: 11px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
       width: 100%;
-      min-height: 24px;
+      min-height: 20px;
+      margin-bottom: 2px;
     }
     
     .brproject-button:disabled {
@@ -60,6 +61,31 @@
       margin-right: 6px;
     }
     
+    .brproject-edit-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      border: none;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+      min-height: 20px;
+      margin-bottom: 4px;
+      background: #00875a;
+      color: white;
+      text-decoration: none;
+    }
+    
+    .brproject-edit-button:hover {
+      background: #006644;
+      text-decoration: none;
+      color: white;
+    }
+    
     .brproject-info {
       margin-top: 8px;
       padding: 6px;
@@ -79,24 +105,6 @@
       color: #42526e;
     }
     
-    .brproject-edit-link {
-      display: inline-block;
-      margin-top: 4px;
-      padding: 4px 8px;
-      background: #00875a;
-      color: white;
-      text-decoration: none;
-      border-radius: 3px;
-      font-size: 10px;
-      transition: background 0.2s ease;
-    }
-    
-    .brproject-edit-link:hover {
-      background: #006644;
-      text-decoration: none;
-      color: white;
-    }
-    
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -108,6 +116,10 @@
     <button class="brproject-button brproject-button-start" disabled>Carregando...</button>
   </div>
   
+  <a id="edit-button" href="#" class="brproject-edit-button" target="_blank" style="display: none;">
+    Editar Tarefa
+  </a>
+  
   <div id="brproject-info" class="brproject-info" style="display: none;">
     <div class="brproject-info-item">
       <span class="brproject-info-label">Cliente:</span> 
@@ -117,9 +129,6 @@
       <span class="brproject-info-label">Projeto:</span> 
       <span id="projeto-nome">-</span>
     </div>
-    <a id="edit-link" href="#" class="brproject-edit-link" target="_blank" style="display: none;">
-      Editar Tarefa
-    </a>
   </div>
 
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
@@ -187,47 +196,82 @@
       }
     }
 
-    function updateTaskInfo(data) {
+    function updateTaskInfo() {
       const infoContainer = document.getElementById('brproject-info');
+      const editButtonElement = document.getElementById('edit-button');
+      
+      if (cardId) {
+        editButtonElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/update/${cardId}`;
+        editButtonElement.style.display = 'inline-flex';
+        
+        fetchTaskInfo(cardId);
+      }
+      
+      infoContainer.style.display = 'block';
+    }
+
+    function fetchTaskInfo(taskId) {
+      if (!brproject || !brproject.url) return;
+      
+      const url = `https://www2.projetos.brsis.com.br/brproject/api/tarefa/referencia/${taskId}`;
+      
+      if (typeof $ === 'undefined') {
+        fetch(url)
+          .then(response => response.json())
+          .then(data => {
+            console.log('[DEBUG] Dados da tarefa:', data);
+            processTaskData(data);
+          })
+          .catch(error => {
+            console.log('[DEBUG] Erro ao buscar tarefa:', error);
+            setDefaultValues();
+          });
+      } else {
+        $.ajax({
+          url: url,
+          method: 'GET',
+          dataType: 'json',
+          success: function(data) {
+            console.log('[DEBUG] Dados da tarefa:', data);
+            processTaskData(data);
+          },
+          error: function(error) {
+            console.log('[DEBUG] Erro ao buscar tarefa:', error);
+            setDefaultValues();
+          }
+        });
+      }
+    }
+
+    function processTaskData(data) {
       const clienteElement = document.getElementById('cliente-nome');
       const projetoElement = document.getElementById('projeto-nome');
-      const editLinkElement = document.getElementById('edit-link');
       
-      if (data && data.success && data.data) {
-        const taskInfo = data.data;
+      if (data && data.success && data.data && data.data.tarefa) {
+        const tarefa = data.data.tarefa;
         
-        if (taskInfo.cliente && taskInfo.cliente.nome) {
-          clienteElement.textContent = taskInfo.cliente.nome;
-        } else if (taskInfo.atividade && taskInfo.atividade.tarefa && taskInfo.atividade.tarefa.cliente) {
-          clienteElement.textContent = taskInfo.atividade.tarefa.cliente.nome || taskInfo.atividade.tarefa.cliente;
-        } else {
-          clienteElement.textContent = 'Não informado';
+        let clienteNome = 'Não informado';
+        if (tarefa.cliente && tarefa.cliente.nome) {
+          clienteNome = tarefa.cliente.nome;
         }
         
-        if (taskInfo.projeto && taskInfo.projeto.nome) {
-          projetoElement.textContent = taskInfo.projeto.nome;
-        } else if (taskInfo.atividade && taskInfo.atividade.tarefa && taskInfo.atividade.tarefa.projeto) {
-          projetoElement.textContent = taskInfo.atividade.tarefa.projeto.nome || taskInfo.atividade.tarefa.projeto;
-        } else {
-          projetoElement.textContent = 'Não informado';
+        let projetoNome = 'Não informado';
+        if (tarefa.projeto && tarefa.projeto.nome) {
+          projetoNome = tarefa.projeto.nome;
         }
         
-        if (cardId) {
-          editLinkElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/update/${cardId}`;
-          editLinkElement.style.display = 'inline-block';
-        }
+        clienteElement.textContent = clienteNome;
+        projetoElement.textContent = projetoNome;
         
-        infoContainer.style.display = 'block';
+        console.log('[DEBUG] Cliente:', clienteNome, 'Projeto:', projetoNome);
       } else {
-        clienteElement.textContent = 'Não informado';
-        projetoElement.textContent = 'Não informado';
-        
-        if (cardId) {
-          editLinkElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/update/${cardId}`;
-          editLinkElement.style.display = 'inline-block';
-          infoContainer.style.display = 'block';
-        }
+        setDefaultValues();
       }
+    }
+
+    function setDefaultValues() {
+      document.getElementById('cliente-nome').textContent = 'Não informado';
+      document.getElementById('projeto-nome').textContent = 'Não informado';
     }
 
     function renderButton(isRunning, isLoading = false) {
@@ -254,11 +298,13 @@
       return new Promise((resolve) => {
         brproject.getUltimaTarefa({
           success: function(data) {
-            taskData = data; 
-            updateTaskInfo(data); 
+            taskData = data;
             
             if (data.success && 
+                data.data && 
+                data.data.atividade &&
                 data.data.atividade.finalizada != 1 && 
+                data.data.atividade.tarefa &&
                 data.data.atividade.tarefa.referencia_id == cardId) {
               resolve(true);
             } else {
@@ -266,11 +312,17 @@
             }
           },
           error: function(error) {
-            updateTaskInfo(null);
+            console.log('[DEBUG] Erro ao buscar tarefa:', error);
             resolve(false);
           }
         });
       });
+    }
+
+    async function loadTaskInfo() {
+      if (cardId && brproject) {
+        updateTaskInfo(); 
+      }
     }
 
     async function startTask() {
@@ -293,7 +345,10 @@
           success: function(data) {
             if (data.success) {
               renderButton(true);
-              setTimeout(() => checkTaskStatus(), 1000);
+              setTimeout(() => {
+                checkTaskStatus();
+                loadTaskInfo();
+              }, 1000);
             } else {
               renderButton(false);
               alert('Erro ao iniciar tarefa: ' + (data.message || ''));
@@ -318,7 +373,10 @@
       brproject.pararTarefa({
         success: function(data) {
           renderButton(false);
-          setTimeout(() => checkTaskStatus(), 1000);
+          setTimeout(() => {
+            checkTaskStatus();
+            loadTaskInfo();
+          }, 1000);
         },
         error: function(error) {
           renderButton(true);
@@ -357,6 +415,8 @@
 
         const isRunning = await checkTaskStatus();
         renderButton(isRunning);
+        
+        await loadTaskInfo();
 
         document.addEventListener('click', function(e) {
           if (e.target.id === 'btn-start') {
