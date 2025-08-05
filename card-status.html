@@ -6,89 +6,24 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
-      padding: 12px;
+      padding: 8px;
       background: transparent;
       font-size: 12px;
-      line-height: 1.4;
-    }
-    
-    .brproject-container {
-      background: #fff;
-      border-radius: 6px;
-      border: 1px solid #e4e6ea;
-      overflow: hidden;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-    
-    .brproject-header {
-      background: linear-gradient(135deg, #0079bf 0%, #005a8b 100%);
-      color: white;
-      padding: 12px;
-      text-align: center;
-      font-weight: 600;
-      font-size: 13px;
-    }
-    
-    .brproject-content {
-      padding: 12px;
-    }
-    
-    .brproject-info {
-      margin-bottom: 12px;
-      background: #f8f9fa;
-      border-radius: 4px;
-      border: 1px solid #e9ecef;
-    }
-    
-    .brproject-info-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px;
-      border-bottom: 1px solid #e9ecef;
-      font-size: 11px;
-    }
-    
-    .brproject-info-item:last-child {
-      border-bottom: none;
-    }
-    
-    .brproject-info-label {
-      font-weight: 600;
-      color: #42526e;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    
-    .brproject-info-value {
-      color: #5e6c84;
-      text-align: right;
-      max-width: 60%;
-      word-break: break-word;
-    }
-    
-    .brproject-info-loading {
-      color: #8993a4;
-      font-style: italic;
     }
     
     .brproject-button {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 10px 16px;
+      padding: 6px 12px;
       border: none;
       border-radius: 4px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
       width: 100%;
-      min-height: 36px;
-      margin-bottom: 8px;
-      text-decoration: none;
-      gap: 8px;
+      min-height: 24px;
     }
     
     .brproject-button:disabled {
@@ -97,151 +32,94 @@
     }
     
     .brproject-button-start {
-      background: linear-gradient(135deg, #0079bf 0%, #005a8b 100%);
+      background: #0079bf;
       color: white;
-      box-shadow: 0 2px 4px rgba(0, 121, 191, 0.2);
     }
     
     .brproject-button-start:hover:not(:disabled) {
-      background: linear-gradient(135deg, #005a8b 0%, #004a73 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(0, 121, 191, 0.3);
+      background: #005a8b;
     }
     
     .brproject-button-stop {
-      background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+      background: #f44336;
       color: white;
-      box-shadow: 0 2px 4px rgba(244, 67, 54, 0.2);
     }
     
     .brproject-button-stop:hover:not(:disabled) {
-      background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
-    }
-    
-    .brproject-button-edit {
-      background: linear-gradient(135deg, #00875a 0%, #006644 100%);
-      color: white;
-      box-shadow: 0 2px 4px rgba(0, 135, 90, 0.2);
-    }
-    
-    .brproject-button-edit:hover {
-      background: linear-gradient(135deg, #006644 0%, #005533 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(0, 135, 90, 0.3);
-      text-decoration: none;
-      color: white;
+      background: #d32f2f;
     }
     
     .brproject-loading {
       display: inline-block;
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
       border: 2px solid rgba(255,255,255,0.3);
       border-top: 2px solid white;
       border-radius: 50%;
       animation: spin 1s linear infinite;
+      margin-right: 6px;
     }
     
-    .brproject-icon {
-      width: 14px;
-      height: 14px;
-      fill: currentColor;
+    .brproject-info {
+      margin-top: 8px;
+      padding: 6px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      font-size: 11px;
+      line-height: 1.4;
     }
     
-    .brproject-status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 6px;
-      border-radius: 10px;
-      font-size: 10px;
+    .brproject-info-item {
+      margin: 2px 0;
+      color: #5e6c84;
+    }
+    
+    .brproject-info-label {
       font-weight: 600;
-      text-transform: uppercase;
+      color: #42526e;
     }
     
-    .brproject-status-running {
-      background: #e8f5e8;
-      color: #2e7d32;
+    .brproject-edit-link {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 4px 8px;
+      background: #00875a;
+      color: white;
+      text-decoration: none;
+      border-radius: 3px;
+      font-size: 10px;
+      transition: background 0.2s ease;
     }
     
-    .brproject-status-stopped {
-      background: #fce4ec;
-      color: #c2185b;
+    .brproject-edit-link:hover {
+      background: #006644;
+      text-decoration: none;
+      color: white;
     }
     
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    
-    .loading-pulse {
-      animation: pulse 1.5s ease-in-out infinite;
-    }
   </style>
 </head>
 <body>
-  <div class="brproject-container">
-    <div class="brproject-header">
-      <span>🚀 BRProject - Controle de Tasks</span>
+  <div id="brproject-status">
+    <button class="brproject-button brproject-button-start" disabled>Carregando...</button>
+  </div>
+  
+  <div id="brproject-info" class="brproject-info" style="display: none;">
+    <div class="brproject-info-item">
+      <span class="brproject-info-label">Cliente:</span> 
+      <span id="cliente-nome">-</span>
     </div>
-    
-    <div class="brproject-content">
-      <div id="brproject-info" class="brproject-info" style="display: none;">
-        <div class="brproject-info-item">
-          <span class="brproject-info-label">
-            <svg class="brproject-icon" viewBox="0 0 24 24">
-              <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2M4 18v-6h2.5l6 6H4zm16.5-9.5L19 7l-.5 1.5L17 9l1.5.5L19 11l.5-1.5L22 9l-1.5-.5zM12.5 11.5L11 10l-.5 1.5L9 12l1.5.5L11 14l.5-1.5L13 12l-1.5-.5z"/>
-            </svg>
-            Cliente
-          </span>
-          <span id="cliente-nome" class="brproject-info-value loading-pulse">Carregando...</span>
-        </div>
-        <div class="brproject-info-item">
-          <span class="brproject-info-label">
-            <svg class="brproject-icon" viewBox="0 0 24 24">
-              <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
-            </svg>
-            Projeto
-          </span>
-          <span id="projeto-nome" class="brproject-info-value loading-pulse">Carregando...</span>
-        </div>
-        <div class="brproject-info-item">
-          <span class="brproject-info-label">
-            <svg class="brproject-icon" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12,6 12,12 16,14"/>
-            </svg>
-            Status
-          </span>
-          <span id="task-status" class="brproject-info-value">
-            <span class="brproject-status-badge brproject-status-stopped">Parada</span>
-          </span>
-        </div>
-      </div>
-      
-      <div id="brproject-actions">
-        <div id="brproject-status">
-          <button class="brproject-button brproject-button-start" disabled>
-            <span class="brproject-loading"></span>
-            Carregando...
-          </button>
-        </div>
-        
-        <a id="edit-button" href="#" class="brproject-button brproject-button-edit" target="_blank" style="display: none;">
-          <svg class="brproject-icon" viewBox="0 0 24 24">
-            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-          </svg>
-          Editar Tarefa
-        </a>
-      </div>
+    <div class="brproject-info-item">
+      <span class="brproject-info-label">Projeto:</span> 
+      <span id="projeto-nome">-</span>
     </div>
+    <a id="edit-link" href="#" class="brproject-edit-link" target="_blank" style="display: none;">
+      Editar Tarefa
+    </a>
   </div>
 
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
@@ -311,160 +189,44 @@
 
     function updateTaskInfo(data) {
       const infoContainer = document.getElementById('brproject-info');
-      const editButtonElement = document.getElementById('edit-button');
-      
-      infoContainer.style.display = 'block';
-      
-      if (cardId) {
-        const baseUrl = brproject && brproject.url ? brproject.url : 'https://www2.projetos.brsis.com.br/brproject';
-        editButtonElement.href = `${baseUrl}/tarefa/update/${cardId}`;
-        editButtonElement.style.display = 'flex';
-        
-        fetchTaskInfo(cardId);
-      }
-    }
-
-    function fetchTaskInfo(taskId) {
-      if (!brproject || !brproject.url || !brproject.token) {
-        setInfoError();
-        return;
-      }
-      
-      const filter = [{
-        property: 'referencia_id',
-        value: taskId,
-        operator: '='
-      }];
-      
-      makeApiRequest('/api/tarefa', { filter: JSON.stringify(filter) })
-        .then(data => {
-          console.log('[DEBUG] Dados da tarefa:', data);
-          if (data.success && data.data && data.data.tarefa && data.data.tarefa.length > 0) {
-            const tarefa = data.data.tarefa[0];
-            
-            const promises = [];
-            
-            if (tarefa.idcliente) {
-              promises.push(fetchClienteInfo(tarefa.idcliente));
-            } else {
-              promises.push(Promise.resolve('Não informado'));
-            }
-            
-            if (tarefa.idprojeto) {
-              promises.push(fetchProjetoInfo(tarefa.idprojeto));
-            } else {
-              promises.push(Promise.resolve('Não informado'));
-            }
-            
-            Promise.all(promises).then(([clienteNome, projetoNome]) => {
-              updateInfoDisplay(clienteNome, projetoNome);
-            });
-          } else {
-            setInfoError('Tarefa não encontrada no BRProject');
-          }
-        })
-        .catch(error => {
-          console.log('[DEBUG] Erro ao buscar tarefa:', error);
-          setInfoError('Erro ao carregar informações');
-        });
-    }
-
-    function fetchClienteInfo(idCliente) {
-      return new Promise((resolve) => {
-        const filter = [{
-          property: 'idcliente',
-          value: idCliente,
-          operator: '='
-        }];
-        
-        makeApiRequest('/api/cliente', { filter: JSON.stringify(filter) })
-          .then(data => {
-            if (data.success && data.data && data.data.cliente && data.data.cliente.length > 0) {
-              resolve(data.data.cliente[0].nome);
-            } else {
-              resolve('Cliente não encontrado');
-            }
-          })
-          .catch(() => resolve('Erro ao carregar cliente'));
-      });
-    }
-
-    function fetchProjetoInfo(idProjeto) {
-      return new Promise((resolve) => {
-        const filter = [{
-          property: 'idprojeto',
-          value: idProjeto,
-          operator: '='
-        }];
-        
-        makeApiRequest('/api/projeto', { filter: JSON.stringify(filter) })
-          .then(data => {
-            if (data.success && data.data && data.data.projeto && data.data.projeto.length > 0) {
-              resolve(data.data.projeto[0].nome);
-            } else {
-              resolve('Projeto não encontrado');
-            }
-          })
-          .catch(() => resolve('Erro ao carregar projeto'));
-      });
-    }
-
-    function makeApiRequest(endpoint, params = {}) {
-      if (!brproject || !brproject.url || !brproject.token) {
-        return Promise.reject('Configuração inválida');
-      }
-      
-      const url = new URL(endpoint, brproject.url);
-      url.searchParams.append('token', brproject.token);
-      
-      Object.keys(params).forEach(key => {
-        url.searchParams.append(key, params[key]);
-      });
-      
-      return fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }).then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      });
-    }
-
-    function updateInfoDisplay(clienteNome, projetoNome) {
       const clienteElement = document.getElementById('cliente-nome');
       const projetoElement = document.getElementById('projeto-nome');
+      const editLinkElement = document.getElementById('edit-link');
       
-      clienteElement.textContent = clienteNome;
-      clienteElement.classList.remove('loading-pulse', 'brproject-info-loading');
-      
-      projetoElement.textContent = projetoNome;
-      projetoElement.classList.remove('loading-pulse', 'brproject-info-loading');
-    }
-
-    function setInfoError(message = 'Não informado') {
-      const clienteElement = document.getElementById('cliente-nome');
-      const projetoElement = document.getElementById('projeto-nome');
-      
-      clienteElement.textContent = message;
-      clienteElement.classList.remove('loading-pulse');
-      clienteElement.classList.add('brproject-info-loading');
-      
-      projetoElement.textContent = message;
-      projetoElement.classList.remove('loading-pulse');
-      projetoElement.classList.add('brproject-info-loading');
-    }
-
-    function updateStatusBadge(isRunning) {
-      const statusElement = document.getElementById('task-status');
-      
-      if (isRunning) {
-        statusElement.innerHTML = '<span class="brproject-status-badge brproject-status-running">Em Execução</span>';
+      if (data && data.success && data.data) {
+        const taskInfo = data.data;
+        
+        if (taskInfo.cliente && taskInfo.cliente.nome) {
+          clienteElement.textContent = taskInfo.cliente.nome;
+        } else if (taskInfo.atividade && taskInfo.atividade.tarefa && taskInfo.atividade.tarefa.cliente) {
+          clienteElement.textContent = taskInfo.atividade.tarefa.cliente.nome || taskInfo.atividade.tarefa.cliente;
+        } else {
+          clienteElement.textContent = 'Não informado';
+        }
+        
+        if (taskInfo.projeto && taskInfo.projeto.nome) {
+          projetoElement.textContent = taskInfo.projeto.nome;
+        } else if (taskInfo.atividade && taskInfo.atividade.tarefa && taskInfo.atividade.tarefa.projeto) {
+          projetoElement.textContent = taskInfo.atividade.tarefa.projeto.nome || taskInfo.atividade.tarefa.projeto;
+        } else {
+          projetoElement.textContent = 'Não informado';
+        }
+        
+        if (cardId) {
+          editLinkElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/update/${cardId}`;
+          editLinkElement.style.display = 'inline-block';
+        }
+        
+        infoContainer.style.display = 'block';
       } else {
-        statusElement.innerHTML = '<span class="brproject-status-badge brproject-status-stopped">Parada</span>';
+        clienteElement.textContent = 'Não informado';
+        projetoElement.textContent = 'Não informado';
+        
+        if (cardId) {
+          editLinkElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/update/${cardId}`;
+          editLinkElement.style.display = 'inline-block';
+          infoContainer.style.display = 'block';
+        }
       }
     }
 
@@ -474,27 +236,16 @@
       if (isRunning) {
         container.innerHTML = `
           <button id="btn-stop" class="brproject-button brproject-button-stop" ${isLoading ? 'disabled' : ''}>
-            ${isLoading ? '<span class="brproject-loading"></span>' : ''}
-            <svg class="brproject-icon" viewBox="0 0 24 24" style="${isLoading ? 'display: none;' : ''}">
-              <rect x="6" y="4" width="4" height="16"/>
-              <rect x="14" y="4" width="4" height="16"/>
-            </svg>
-            Parar Tarefa
+            ${isLoading ? '<span class="brproject-loading"></span>' : ''}Parar Tarefa
           </button>
         `;
       } else {
         container.innerHTML = `
           <button id="btn-start" class="brproject-button brproject-button-start" ${isLoading ? 'disabled' : ''}>
-            ${isLoading ? '<span class="brproject-loading"></span>' : ''}
-            <svg class="brproject-icon" viewBox="0 0 24 24" style="${isLoading ? 'display: none;' : ''}">
-              <polygon points="5,3 19,12 5,21"/>
-            </svg>
-            Iniciar Tarefa
+            ${isLoading ? '<span class="brproject-loading"></span>' : ''}Iniciar Tarefa
           </button>
         `;
       }
-      
-      updateStatusBadge(isRunning);
     }
 
     async function checkTaskStatus() {
@@ -504,12 +255,10 @@
         brproject.getUltimaTarefa({
           success: function(data) {
             taskData = data; 
+            updateTaskInfo(data); 
             
             if (data.success && 
-                data.data && 
-                data.data.atividade &&
                 data.data.atividade.finalizada != 1 && 
-                data.data.atividade.tarefa &&
                 data.data.atividade.tarefa.referencia_id == cardId) {
               resolve(true);
             } else {
@@ -517,17 +266,11 @@
             }
           },
           error: function(error) {
-            console.log('[DEBUG] Erro ao buscar tarefa:', error);
+            updateTaskInfo(null);
             resolve(false);
           }
         });
       });
-    }
-
-    async function loadTaskInfo() {
-      if (cardId && brproject) {
-        updateTaskInfo(); 
-      }
     }
 
     async function startTask() {
@@ -550,10 +293,7 @@
           success: function(data) {
             if (data.success) {
               renderButton(true);
-              setTimeout(() => {
-                checkTaskStatus();
-                loadTaskInfo();
-              }, 1000);
+              setTimeout(() => checkTaskStatus(), 1000);
             } else {
               renderButton(false);
               alert('Erro ao iniciar tarefa: ' + (data.message || ''));
@@ -578,10 +318,7 @@
       brproject.pararTarefa({
         success: function(data) {
           renderButton(false);
-          setTimeout(() => {
-            checkTaskStatus();
-            loadTaskInfo();
-          }, 1000);
+          setTimeout(() => checkTaskStatus(), 1000);
         },
         error: function(error) {
           renderButton(true);
@@ -611,7 +348,7 @@
         
         if (!isLoggedIn) {
           document.getElementById('brproject-status').innerHTML = 
-            '<button class="brproject-button brproject-button-start" disabled>Não conectado ao BRProject</button>';
+            '<button class="brproject-button brproject-button-start" disabled>Não conectado</button>';
           return;
         }
         
@@ -620,20 +357,17 @@
 
         const isRunning = await checkTaskStatus();
         renderButton(isRunning);
-        
-        await loadTaskInfo();
 
         document.addEventListener('click', function(e) {
-          if (e.target.id === 'btn-start' || e.target.closest('#btn-start')) {
+          if (e.target.id === 'btn-start') {
             startTask();
           }
-          if (e.target.id === 'btn-stop' || e.target.closest('#btn-stop')) {
+          if (e.target.id === 'btn-stop') {
             stopTask();
           }
         });
         
       } catch (e) {
-        console.error('[DEBUG] Erro na inicialização:', e);
         document.getElementById('brproject-status').innerHTML = 
           '<button class="brproject-button brproject-button-start" disabled>Erro ao carregar</button>';
       }
