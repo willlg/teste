@@ -217,97 +217,18 @@
         return;
       }
       
-      console.log('[DEBUG] Token:', brproject.token);
-      console.log('[DEBUG] URL:', brproject.url);
+      console.log('[DEBUG] Buscando tarefa via brproject.getTarefaPorReferencia');
       
-      const url = `https://www2.projetos.brsis.com.br/brproject/api/tarefa/referencia/${taskId}?token=${encodeURIComponent(brproject.token)}`;
-      
-      console.log('[DEBUG] Tentando URL:', url);
-      
-      if (typeof $ === 'undefined') {
-        fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-          .then(response => {
-            console.log('[DEBUG] Response status:', response.status);
-            if (response.status === 302 || response.status === 401) {
-              console.log('[DEBUG] Problema de autenticação, tentando via brproject.js');
-              return tryBrprojectMethod(taskId);
-            }
-            return response.json();
-          })
-          .then(data => {
-            if (data) {
-              console.log('[DEBUG] Dados da tarefa:', data);
-              processTaskData(data);
-            } else {
-              tryBrprojectMethod(taskId);
-            }
-          })
-          .catch(error => {
-            console.log('[DEBUG] Erro ao buscar tarefa:', error);
-            tryBrprojectMethod(taskId);
-          });
-      } else {
-        $.ajax({
-          url: url,
-          method: 'GET',
-          dataType: 'json',
-          success: function(data) {
-            console.log('[DEBUG] Dados da tarefa:', data);
-            processTaskData(data);
-          },
-          error: function(xhr, status, error) {
-            console.log('[DEBUG] Erro ao buscar tarefa:', xhr.status, status, error);
-            if (xhr.status === 302 || xhr.status === 401 || xhr.status === 0) {
-              console.log('[DEBUG] Problema de autenticação, tentando via brproject.js');
-              tryBrprojectMethod(taskId);
-            } else {
-              setDefaultValues();
-            }
-          }
-        });
-      }
-    }
-
-    function tryBrprojectMethod(taskId) {
-      if (!brproject) {
-        setDefaultValues();
-        return;
-      }
-      
-      console.log('[DEBUG] Tentando usar métodos do brproject.js');
-      
-      if (typeof brproject.getTarefaPorReferencia === 'function') {
-        brproject.getTarefaPorReferencia(taskId, {
-          success: function(data) {
-            console.log('[DEBUG] Dados via brproject.getTarefaPorReferencia:', data);
-            processTaskData(data);
-          },
-          error: function(error) {
-            console.log('[DEBUG] Erro via brproject.getTarefaPorReferencia:', error);
-            setDefaultValues();
-          }
-        });
-      } else if (typeof brproject.getTarefa === 'function') {
-        brproject.getTarefa({
-          referencia_id: taskId,
-          success: function(data) {
-            console.log('[DEBUG] Dados via brproject.getTarefa:', data);
-            processTaskData(data);
-          },
-          error: function(error) {
-            console.log('[DEBUG] Erro via brproject.getTarefa:', error);
-            setDefaultValues();
-          }
-        });
-      } else {
-        console.log('[DEBUG] Nenhum método disponível no brproject.js');
-        setDefaultValues();
-      }
+      brproject.getTarefaPorReferencia(taskId, {
+        success: function(data) {
+          console.log('[DEBUG] Dados da tarefa:', data);
+          processTaskData(data);
+        },
+        error: function(xhr, status, error) {
+          console.log('[DEBUG] Erro ao buscar tarefa:', xhr, status, error);
+          setDefaultValues();
+        }
+      });
     }
 
     function processTaskData(data) {

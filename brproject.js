@@ -25,6 +25,9 @@
 	this.getUltimaTarefa = function(callback) {
 		return this.req('tarefa/ultima','GET',null,callback);
 	};
+	this.getTarefaPorReferencia = function(referencia_id, callback) {
+        return this.req('tarefa/referencia/' + referencia_id, 'GET', null, callback);
+    };
 	this.test = function(){
 		alert("teste");
 	};
