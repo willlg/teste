@@ -211,185 +211,32 @@
     }
 
     function fetchTaskInfo(taskId) {
-      if (!brproject || !brproject.token) {
-        console.log('[DEBUG] Token ou brproject não disponível');
-        setDefaultValues();
-        return;
-      }
+      if (!brproject || !brproject.url || !brproject.token) return;
       
-      console.log('[DEBUG] Token:', brproject.token);
-      console.log('[DEBUG] URL:', brproject.url);
-      
-      const url1 = `https://www2.projetos.brsis.com.br/brproject/api/tarefa/referencia/${taskId}?token=${encodeURIComponent(brproject.token)}`;
-      const url2 = `${brproject.url}/api/tarefa/referencia/${taskId}?token=${encodeURIComponent(brproject.token)}`;
-      
-      console.log('[DEBUG] Tentando URL1:', url1);
+      const url = `https://www2.projetos.brsis.com.br/brproject/api/tarefa/referencia/${taskId}?token=${encodeURIComponent(brproject.token)}`;
       
       if (typeof $ === 'undefined') {
-        fetch(url1, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${brproject.token}`,
-            'X-Auth-Token': brproject.token
-          },
-          credentials: 'include'
-        })
-          .then(response => {
-            console.log('[DEBUG] Response status:', response.status);
-            if (response.status === 302) {
-              console.log('[DEBUG] Redirecionamento 302 detectado, tentando URL alternativa');
-              return tryAlternativeUrl(taskId);
-            }
-            return response.json();
-          })
+        fetch(url)
+          .then(response => response.json())
           .then(data => {
-            if (data) {
-              console.log('[DEBUG] Dados da tarefa:', data);
-              processTaskData(data);
-            }
+            console.log('[DEBUG] Dados da tarefa:', data);
+            processTaskData(data);
           })
           .catch(error => {
             console.log('[DEBUG] Erro ao buscar tarefa:', error);
-            tryAlternativeUrl(taskId);
-          });
-      } else {
-        $.ajax({
-          url: url1,
-          method: 'GET',
-          dataType: 'json',
-          headers: {
-            'Authorization': `Bearer ${brproject.token}`,
-            'X-Auth-Token': brproject.token
-          },
-          xhrFields: {
-            withCredentials: true
-          },
-          success: function(data) {
-            console.log('[DEBUG] Dados da tarefa:', data);
-            processTaskData(data);
-          },
-          error: function(xhr, status, error) {
-            console.log('[DEBUG] Erro ao buscar tarefa:', xhr.status, status, error);
-            if (xhr.status === 302) {
-              console.log('[DEBUG] Redirecionamento 302 detectado, tentando URL alternativa');
-              tryAlternativeUrl(taskId);
-            } else {
-              setDefaultValues();
-            }
-          }
-        });
-      }
-    }
-
-    function tryAlternativeUrl(taskId) {
-      if (!brproject || !brproject.url || !brproject.token) {
-        setDefaultValues();
-        return;
-      }
-      
-      const url = `${brproject.url}/api/tarefa/referencia/${taskId}?token=${encodeURIComponent(brproject.token)}`;
-      console.log('[DEBUG] Tentando URL alternativa:', url);
-      
-      if (typeof $ === 'undefined') {
-        fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${brproject.token}`,
-            'X-Auth-Token': brproject.token
-          },
-          credentials: 'include'
-        })
-          .then(response => {
-            console.log('[DEBUG] Response status URL alternativa:', response.status);
-            if (response.status === 302 || response.status === 401) {
-              console.log('[DEBUG] Ainda com problemas de autenticação, tentando método POST');
-              return tryPostMethod(taskId);
-            }
-            return response.json();
-          })
-          .then(data => {
-            if (data) {
-              console.log('[DEBUG] Dados da tarefa (URL alternativa):', data);
-              processTaskData(data);
-            }
-          })
-          .catch(error => {
-            console.log('[DEBUG] Erro URL alternativa:', error);
-            tryPostMethod(taskId);
-          });
-      } else {
-        $.ajax({
-          url: url,
-          method: 'GET',
-          dataType: 'json',
-          headers: {
-            'Authorization': `Bearer ${brproject.token}`,
-            'X-Auth-Token': brproject.token
-          },
-          xhrFields: {
-            withCredentials: true
-          },
-          success: function(data) {
-            console.log('[DEBUG] Dados da tarefa (URL alternativa):', data);
-            processTaskData(data);
-          },
-          error: function(xhr, status, error) {
-            console.log('[DEBUG] Erro URL alternativa:', xhr.status, status, error);
-            tryPostMethod(taskId);
-          }
-        });
-      }
-    }
-
-    function tryPostMethod(taskId) {
-      if (!brproject || !brproject.url || !brproject.token) {
-        setDefaultValues();
-        return;
-      }
-      
-      const url = `${brproject.url}/api/tarefa/referencia/${taskId}`;
-      console.log('[DEBUG] Tentando método POST:', url);
-      
-      const postData = {
-        token: brproject.token
-      };
-      
-      if (typeof $ === 'undefined') {
-        fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(postData),
-          credentials: 'include'
-        })
-          .then(response => {
-            console.log('[DEBUG] Response status POST:', response.status);
-            return response.json();
-          })
-          .then(data => {
-            console.log('[DEBUG] Dados da tarefa (POST):', data);
-            processTaskData(data);
-          })
-          .catch(error => {
-            console.log('[DEBUG] Erro método POST:', error);
             setDefaultValues();
           });
       } else {
         $.ajax({
           url: url,
-          method: 'POST',
-          data: JSON.stringify(postData),
-          contentType: 'application/json',
+          method: 'GET',
           dataType: 'json',
           success: function(data) {
-            console.log('[DEBUG] Dados da tarefa (POST):', data);
+            console.log('[DEBUG] Dados da tarefa:', data);
             processTaskData(data);
           },
-          error: function(xhr, status, error) {
-            console.log('[DEBUG] Erro método POST:', xhr.status, status, error);
+          error: function(error) {
+            console.log('[DEBUG] Erro ao buscar tarefa:', error);
             setDefaultValues();
           }
         });
@@ -451,7 +298,7 @@
       return new Promise((resolve) => {
         brproject.getUltimaTarefa({
           success: function(data) {
-            taskData = data; 
+            taskData = data;
             
             if (data.success && 
                 data.data && 
