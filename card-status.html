@@ -3,19 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <style>
+    * {
+      box-sizing: border-box;
+    }
+    
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
-      padding: 8px;
+      padding: 6px;
       background: transparent;
-      font-size: 12px;
+      font-size: 11px;
+      height: 120px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
     
     .brproject-button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 4px 8px;
+      padding: 6px 8px;
       border: none;
       border-radius: 3px;
       font-size: 11px;
@@ -23,8 +32,8 @@
       cursor: pointer;
       transition: all 0.2s ease;
       width: 100%;
-      min-height: 20px;
-      margin-bottom: 2px;
+      height: 28px;
+      flex-shrink: 0;
     }
     
     .brproject-button:disabled {
@@ -65,7 +74,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 4px 8px;
+      padding: 6px 8px;
       border: none;
       border-radius: 3px;
       font-size: 11px;
@@ -73,11 +82,11 @@
       cursor: pointer;
       transition: all 0.2s ease;
       width: 100%;
-      min-height: 20px;
-      margin-bottom: 4px;
+      height: 28px;
       background: #00875a;
       color: white;
       text-decoration: none;
+      flex-shrink: 0;
     }
     
     .brproject-edit-button:hover {
@@ -87,17 +96,22 @@
     }
     
     .brproject-info {
-      margin-top: 8px;
-      padding: 6px;
+      padding: 4px 6px;
       background: #f8f9fa;
-      border-radius: 4px;
-      font-size: 11px;
-      line-height: 1.4;
+      border-radius: 3px;
+      font-size: 10px;
+      line-height: 1.2;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
     
     .brproject-info-item {
-      margin: 2px 0;
+      margin: 1px 0;
       color: #5e6c84;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     
     .brproject-info-label {
@@ -120,7 +134,7 @@
     Editar Tarefa
   </a>
   
-  <div id="brproject-info" class="brproject-info" style="display: none;">
+  <div id="brproject-info" class="brproject-info">
     <div class="brproject-info-item">
       <span class="brproject-info-label">Cliente:</span> 
       <span id="cliente-nome">-</span>
@@ -196,14 +210,10 @@
       }
     }
 
-    function updateTaskInfo() {
-      const infoContainer = document.getElementById('brproject-info');
-      
+    function updateTaskInfo() {      
       if (cardId) {
         fetchTaskInfo(cardId);
       }
-      
-      infoContainer.style.display = 'block';
     }
 
     function fetchTaskInfo(taskId) {
