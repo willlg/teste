@@ -198,12 +198,8 @@
 
     function updateTaskInfo() {
       const infoContainer = document.getElementById('brproject-info');
-      const editButtonElement = document.getElementById('edit-button');
       
       if (cardId) {
-        editButtonElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/update/${cardId}`;
-        editButtonElement.style.display = 'inline-flex';
-        
         fetchTaskInfo(cardId);
       }
       
@@ -234,6 +230,7 @@
     function processTaskData(data) {
       const clienteElement = document.getElementById('cliente-nome');
       const projetoElement = document.getElementById('projeto-nome');
+      const editButtonElement = document.getElementById('edit-button');
       
       if (data && data.success && data.data && data.data.tarefa) {
         const tarefa = data.data.tarefa;
@@ -251,9 +248,17 @@
         clienteElement.textContent = clienteNome;
         projetoElement.textContent = projetoNome;
         
-        console.log('[DEBUG] Cliente:', clienteNome, 'Projeto:', projetoNome);
+        if (tarefa.idtarefa) {
+          editButtonElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/update/${tarefa.idtarefa}`;
+          editButtonElement.style.display = 'inline-flex';
+        } else {
+          editButtonElement.style.display = 'none';
+        }
+        
+        console.log('[DEBUG] Cliente:', clienteNome, 'Projeto:', projetoNome, 'ID Tarefa:', tarefa.idtarefa);
       } else {
         setDefaultValues();
+        editButtonElement.style.display = 'none';
       }
     }
 
