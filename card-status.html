@@ -12,13 +12,12 @@
       margin: 0;
       padding: 2px;
       background: transparent;
-      font-size: 11px;
-      height: 100%;
-      min-height: 70px;
-      overflow: visible;
+      font-size: 10px;
+      height: 68px;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 2px;
     }
     
     .brproject-button {
@@ -28,12 +27,12 @@
       padding: 2px;
       border: none;
       border-radius: 2px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
       width: 100%;
-      height: 20px;
+      height: 18px;
       flex-shrink: 0;
     }
     
@@ -62,32 +61,41 @@
     
     .brproject-loading {
       display: inline-block;
-      width: 12px;
-      height: 12px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top: 2px solid white;
+      width: 10px;
+      height: 10px;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-top: 1px solid white;
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin-right: 6px;
+      margin-right: 4px;
     }
     
-    .brproject-edit-button {
+    .brproject-buttons-row {
+      display: flex;
+      gap: 2px;
+      height: 18px;
+    }
+    
+    .brproject-action-button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       padding: 2px;
       border: none;
       border-radius: 2px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
-      width: 100%;
-      height: 20px;
-      background: #00875a;
+      flex: 1;
+      height: 18px;
       color: white;
       text-decoration: none;
       flex-shrink: 0;
+    }
+    
+    .brproject-edit-button {
+      background: #00875a;
     }
     
     .brproject-edit-button:hover {
@@ -96,21 +104,33 @@
       color: white;
     }
     
+    .brproject-dashboard-button {
+      background: #8b5a00;
+    }
+    
+    .brproject-dashboard-button:hover {
+      background: #664400;
+      text-decoration: none;
+      color: white;
+    }
+    
     .brproject-info {
-      padding: 2px;
+      padding: 2px 4px;
       background: #f8f9fa;
-      border-radius: 3px;
-      font-size: 11px;
-      line-height: 1.4;
+      border-radius: 2px;
+      font-size: 9px;
+      line-height: 1.2;
       flex: 1;
-      min-height: 30px;
+      min-height: 24px;
+      display: flex;
+      gap: 8px;
     }
     
     .brproject-info-item {
-      margin: 3px 0;
+      flex: 1;
       color: #5e6c84;
       white-space: nowrap;
-      overflow: visible;
+      overflow: hidden;
       text-overflow: ellipsis;
     }
     
@@ -130,9 +150,14 @@
     <button class="brproject-button brproject-button-start" disabled>Carregando...</button>
   </div>
   
-  <a id="edit-button" href="#" class="brproject-edit-button" target="_blank" style="display: none;">
-    Editar Tarefa
-  </a>
+  <div class="brproject-buttons-row">
+    <a id="edit-button" href="#" class="brproject-action-button brproject-edit-button" target="_blank" style="display: none;">
+      Editar
+    </a>
+    <a id="dashboard-button" href="#" class="brproject-action-button brproject-dashboard-button" target="_blank" style="display: none;">
+      Dashboard
+    </a>
+  </div>
   
   <div id="brproject-info" class="brproject-info">
     <div class="brproject-info-item">
@@ -241,6 +266,7 @@
       const clienteElement = document.getElementById('cliente-nome');
       const projetoElement = document.getElementById('projeto-nome');
       const editButtonElement = document.getElementById('edit-button');
+      const dashboardButtonElement = document.getElementById('dashboard-button');
       
       if (data && data.success && data.data && data.data.tarefa) {
         const tarefa = data.data.tarefa;
@@ -261,14 +287,19 @@
         if (tarefa.idtarefa) {
           editButtonElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/update/${tarefa.idtarefa}`;
           editButtonElement.style.display = 'inline-flex';
+          
+          dashboardButtonElement.href = `https://www2.projetos.brsis.com.br/brproject/tarefa/${tarefa.idtarefa}`;
+          dashboardButtonElement.style.display = 'inline-flex';
         } else {
           editButtonElement.style.display = 'none';
+          dashboardButtonElement.style.display = 'none';
         }
         
         console.log('[DEBUG] Cliente:', clienteNome, 'Projeto:', projetoNome, 'ID Tarefa:', tarefa.idtarefa);
       } else {
         setDefaultValues();
         editButtonElement.style.display = 'none';
+        dashboardButtonElement.style.display = 'none';
       }
     }
 
