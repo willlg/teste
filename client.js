@@ -40,14 +40,22 @@ async function hasRunningTasks(t) {
       return false;
     }
     
-    if (!await waitForBrproject()) {
-      console.log('Brproject não disponível após timeout');
-      taskStatusCache = false;
-      cacheTimestamp = now;
-      return false;
+    if (typeof Brproject === 'undefined') {
+      console.log('Brproject não definido, tentando novamente...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (typeof Brproject === 'undefined') {
+        console.log('Brproject ainda não disponível após delay');
+        taskStatusCache = false;
+        cacheTimestamp = now;
+        return false;
+      }
     }
     
+    console.log('Antes do new Brproject');
     var brproject = new Brproject();
+    console.log('Depois do new Brproject');
+    
     brproject.token = userData.token;
     brproject.url = userData.url;
     
@@ -57,19 +65,27 @@ async function hasRunningTasks(t) {
         taskStatusCache = false;
         cacheTimestamp = now;
         resolve(false);
-      }, 8000); 
+      }, 8000);
       
       brproject.getUltimaTarefa({
         success: function(data) {
           clearTimeout(timeout);
           console.log('Resposta getUltimaTarefa:', data);
           
-          const hasRunning = data.success && 
-                           data.data && 
-                           data.data.atividade && 
-                           data.data.atividade.finalizada != 1;
+          let hasRunning = false;
+          if (data.success && data.data && data.data.atividade) {
+            hasRunning = data.data.atividade.finalizada != 1;
+            
+            if (hasRunning) {
+              console.log('Tarefa em execução encontrada:', {
+                id: data.data.atividade.tarefa.idtarefa,
+                nome: data.data.atividade.tarefa.nome,
+                inicio: data.data.atividade.data_inicio
+              });
+            }
+          }
           
-          console.log('Tarefa em execução:', hasRunning);
+          console.log('Status final da tarefa em execução:', hasRunning);
           taskStatusCache = hasRunning;
           cacheTimestamp = now;
           resolve(hasRunning);
@@ -90,30 +106,6 @@ async function hasRunningTasks(t) {
     cacheTimestamp = Date.now();
     return false;
   }
-}
-
-function waitForBrproject(timeout = 5000) {
-  return new Promise((resolve) => {
-    const startTime = Date.now();
-    
-    function checkBrproject() {
-      if (typeof window.Brproject !== 'undefined') {
-        console.log('Brproject disponível');
-        resolve(true);
-        return;
-      }
-      
-      if (Date.now() - startTime > timeout) {
-        console.log('Timeout aguardando Brproject');
-        resolve(false);
-        return;
-      }
-      
-      setTimeout(checkBrproject, 100);
-    }
-    
-    checkBrproject();
-  });
 }
 
 function clearTaskStatusCache() {
@@ -241,32 +233,45 @@ window.addEventListener('message', function(event) {
 });
 
 function waitForDependenciesAndInitialize() {
-  const maxWaitTime = 10000; 
-  const startTime = Date.now();
+  console.log('[DEBUG] Verificando dependências...');
   
-  function checkAndInitialize() {
-    if (window.TrelloPowerUp && window.BRPROJECT_BASE_URL) {
-      console.log('Dependências básicas carregadas, inicializando...');
-      initializePowerUp();
-      return;
-    }
-    
-    if (Date.now() - startTime > maxWaitTime) {
-      console.error('Timeout aguardando dependências');
-      return;
-    }
-    
-    setTimeout(checkAndInitialize, 200);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('[DEBUG] DOM Ready');
+      checkDependenciesAndInit();
+    });
+  } else {
+    console.log('[DEBUG] DOM já está pronto');
+    checkDependenciesAndInit();
   }
   
-  checkAndInitialize();
+  function checkDependenciesAndInit() {
+    const maxAttempts = 50;
+    let attempts = 0;
+    
+    function tryInit() {
+      attempts++;
+      console.log(`[DEBUG] Tentativa ${attempts} de inicialização`);
+      
+      if (window.TrelloPowerUp && window.BRPROJECT_BASE_URL) {
+        console.log('[DEBUG] Dependências básicas encontradas');
+        initializePowerUp();
+        return;
+      }
+      
+      if (attempts >= maxAttempts) {
+        console.error('[DEBUG] Máximo de tentativas atingido para carregar dependências');
+        return;
+      }
+      
+      setTimeout(tryInit, 200);
+    }
+    
+    tryInit();
+  }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', waitForDependenciesAndInitialize);
-} else {
-  waitForDependenciesAndInitialize();
-}
+waitForDependenciesAndInitialize();
 
 window.BRProjectUtils = {
   updateCardStatus: function(t, cardId, status, taskData) {
