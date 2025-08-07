@@ -536,6 +536,23 @@
       }
     }
 
+    function notifyTaskStatusChange() {
+      console.log('[DEBUG] Notificando mudança de status da tarefa');
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: 'brproject-task-status-changed'
+          }, '*');
+        }
+        
+        if (t && typeof t.notifyParent === 'function') {
+          t.notifyParent('brproject-task-status-changed');
+        }
+      } catch (e) {
+        console.log('[DEBUG] Erro ao enviar mensagem para parent:', e);
+      }
+    }
+
     async function initializeApp() {
       console.log('[DEBUG] initializeApp iniciado');
       
@@ -660,6 +677,9 @@
           await clearUserData();
           brproject.token = null;
           brproject.url = null;
+          
+          notifyTaskStatusChange();
+          
           renderUI({ 
             logado: false, 
             tarefasEmAndamento: [], 
@@ -679,6 +699,9 @@
           brproject.pararTarefa({
             success: function(data) {
               console.log('[DEBUG] Tarefa parada com sucesso:', data);
+              
+              notifyTaskStatusChange();
+              
               renderUI({ 
                 logado: true, 
                 tarefasEmAndamento: [], 
@@ -686,6 +709,16 @@
                 feedback: {type:'success',msg:'Tarefa parada!'},
                 boardData: boardData
               });
+              
+              setTimeout(function() {
+                try {
+                  if (t && typeof t.closePopup === 'function') {
+                    t.closePopup();
+                  }
+                } catch (e) {
+                  console.log('[DEBUG] Erro ao fechar popup:', e);
+                }
+              }, 1500); 
             },
             error: function(error) {
               console.log('[DEBUG] Erro ao parar tarefa:', error);
@@ -727,6 +760,8 @@
                 await setUserData(data.data.token, url, data.data.usuario);
                 brproject.token = data.data.token;
                 brproject.url = url;
+                
+                notifyTaskStatusChange();
                 
                 await brproject.getUltimaTarefa({
                   success: function(taskData) {
