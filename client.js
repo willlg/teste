@@ -40,8 +40,8 @@ async function hasRunningTasks(t) {
       return false;
     }
     
-    if (typeof window.Brproject === 'undefined') {
-      console.log('Brproject não disponível');
+    if (!await waitForBrproject()) {
+      console.log('Brproject não disponível após timeout');
       taskStatusCache = false;
       cacheTimestamp = now;
       return false;
@@ -57,7 +57,7 @@ async function hasRunningTasks(t) {
         taskStatusCache = false;
         cacheTimestamp = now;
         resolve(false);
-      }, 5000); 
+      }, 8000); 
       
       brproject.getUltimaTarefa({
         success: function(data) {
@@ -90,6 +90,30 @@ async function hasRunningTasks(t) {
     cacheTimestamp = Date.now();
     return false;
   }
+}
+
+function waitForBrproject(timeout = 5000) {
+  return new Promise((resolve) => {
+    const startTime = Date.now();
+    
+    function checkBrproject() {
+      if (typeof window.Brproject !== 'undefined') {
+        console.log('Brproject disponível');
+        resolve(true);
+        return;
+      }
+      
+      if (Date.now() - startTime > timeout) {
+        console.log('Timeout aguardando Brproject');
+        resolve(false);
+        return;
+      }
+      
+      setTimeout(checkBrproject, 100);
+    }
+    
+    checkBrproject();
+  });
 }
 
 function clearTaskStatusCache() {
@@ -216,10 +240,32 @@ window.addEventListener('message', function(event) {
   }
 });
 
+function waitForDependenciesAndInitialize() {
+  const maxWaitTime = 10000; 
+  const startTime = Date.now();
+  
+  function checkAndInitialize() {
+    if (window.TrelloPowerUp && window.BRPROJECT_BASE_URL) {
+      console.log('Dependências básicas carregadas, inicializando...');
+      initializePowerUp();
+      return;
+    }
+    
+    if (Date.now() - startTime > maxWaitTime) {
+      console.error('Timeout aguardando dependências');
+      return;
+    }
+    
+    setTimeout(checkAndInitialize, 200);
+  }
+  
+  checkAndInitialize();
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializePowerUp);
+  document.addEventListener('DOMContentLoaded', waitForDependenciesAndInitialize);
 } else {
-  initializePowerUp();
+  waitForDependenciesAndInitialize();
 }
 
 window.BRProjectUtils = {
