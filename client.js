@@ -47,7 +47,7 @@ async function hasRunningTasks(t) {
       return false;
     }
     
-    const brproject = new window.Brproject();
+    var brproject = new Brproject();
     brproject.token = userData.token;
     brproject.url = userData.url;
     
