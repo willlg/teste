@@ -30,7 +30,7 @@ function initializePowerUp() {
     'board-buttons': function (t, options) {
       console.log('board-buttons inicializado');
       return [{
-        icon: window.BRPROJECT_BASE_URL + '/images/project.png',
+        icon: window.BRPROJECT_BASE_URL + '/images/logo-128.png',
         text: 'BRProject',
         callback: function (t) {
           console.log('Board button clicado');
