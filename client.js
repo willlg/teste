@@ -17,119 +17,6 @@ function checkDependencies() {
   return true;
 }
 
-let taskStatusCache = null;
-let cacheTimestamp = 0;
-const CACHE_DURATION = 30000; 
-
-async function hasRunningTasks(t) {
-  try {
-    console.log('Verificando tarefas em execução - versão simplificada');
-    
-    const now = Date.now();
-    if (taskStatusCache !== null && (now - cacheTimestamp) < CACHE_DURATION) {
-      console.log('Usando cache para status da tarefa:', taskStatusCache);
-      return taskStatusCache;
-    }
-
-    let userData;
-    try {
-      userData = await Promise.race([
-        getUserDataSafe(t),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout getUserData')), 1000))
-      ]);
-    } catch (e) {
-      console.log('Erro ou timeout ao obter dados do usuário:', e);
-      taskStatusCache = false;
-      cacheTimestamp = now;
-      return false;
-    }
-    
-    if (!userData.token || !userData.url) {
-      console.log('Usuário não logado');
-      taskStatusCache = false;
-      cacheTimestamp = now;
-      return false;
-    }
-    
-    if (typeof window.Brproject === 'undefined') {
-      console.log('Brproject não disponível');
-      taskStatusCache = false;
-      cacheTimestamp = now;
-      return false;
-    }
-    
-    const brproject = new window.Brproject();
-    brproject.token = userData.token;
-    brproject.url = userData.url;
-    
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        console.log('Timeout na verificação de tarefas');
-        taskStatusCache = false;
-        cacheTimestamp = now;
-        resolve(false);
-      }, 2000);
-      
-      brproject.getUltimaTarefa({
-        success: function(data) {
-          clearTimeout(timeout);
-          console.log('Resposta getUltimaTarefa:', data);
-          
-          let hasRunning = false;
-          try {
-            hasRunning = data.success && 
-                        data.data && 
-                        data.data.atividade && 
-                        data.data.atividade.finalizada != 1;
-          } catch (e) {
-            console.log('Erro ao processar resposta da API:', e);
-            hasRunning = false;
-          }
-          
-          console.log('Tarefa em execução:', hasRunning);
-          taskStatusCache = hasRunning;
-          cacheTimestamp = now;
-          resolve(hasRunning);
-        },
-        error: function(error) {
-          clearTimeout(timeout);
-          console.log('Erro ao verificar tarefas (não crítico):', error);
-          taskStatusCache = false;
-          cacheTimestamp = now;
-          resolve(false);
-        }
-      });
-    });
-    
-  } catch (error) {
-    console.log('Erro geral ao verificar tarefas em execução:', error);
-    taskStatusCache = false;
-    cacheTimestamp = Date.now();
-    return false;
-  }
-}
-
-async function getUserDataSafe(t) {
-  try {
-    const [token, url, usuario] = await Promise.all([
-      t.get('member', 'private', 'brproject-token').catch(() => null),
-      t.get('member', 'private', 'brproject-url').catch(() => null),
-      t.get('member', 'private', 'brproject-usuario').catch(() => null)
-    ]);
-    
-    return { token, url, usuario };
-  } catch (e) {
-    console.log('Erro ao obter dados do usuário de forma segura:', e);
-    return { token: null, url: null, usuario: null };
-  }
-}
-
-function clearTaskStatusCache() {
-  taskStatusCache = null;
-  cacheTimestamp = 0;
-  console.log('Cache de status da tarefa limpo');
-}
-
 function initializePowerUp() {
   if (!checkDependencies()) {
     console.error('Não foi possível inicializar o power-up devido a dependências faltando');
@@ -142,77 +29,19 @@ function initializePowerUp() {
   window.TrelloPowerUp.initialize({
     'board-buttons': function (t, options) {
       console.log('board-buttons inicializado');
-      
-      return Promise.resolve().then(async function() {
-        try {
-          console.log('Verificando status das tarefas...');
-          
-          let hasRunning = false;
-          
-          try {
-            hasRunning = await Promise.race([
-              hasRunningTasks(t),
-              new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Timeout')), 2000)
-              )
-            ]);
-          } catch (timeoutError) {
-            console.log('Timeout ao verificar tarefas, usando fallback');
-            hasRunning = false;
-          }
-          
-          let iconUrl, buttonText;
-          
-          if (hasRunning) {
-            iconUrl = window.BRPROJECT_BASE_URL + '/images/icone_play.png';
-            buttonText = 'BRProject ⏸️';
-          } else {
-            iconUrl = window.BRPROJECT_BASE_URL + '/images/icone_pause.png';
-            buttonText = 'BRProject ▶️';
-          }
-          
-          console.log(`Board button: ${buttonText}, hasRunning: ${hasRunning}`);
-          
-          return [{
-            icon: {
-              dark: iconUrl,
-              light: iconUrl
-            },
-            text: buttonText,
-            callback: function (t) {
-              console.log('Board button clicado');
-              clearTaskStatusCache();
-              
-              return t.popup({
-                title: 'BRProject - Controle de Tarefas',
-                url: window.BRPROJECT_BASE_URL + '/board-popup.html',
-                height: 500,
-                width: 380
-              });
-            }
-          }];
-          
-        } catch (error) {
-          console.error('Erro na board-buttons:', error);
-          
-          return [{
-            icon: {
-              dark: window.BRPROJECT_BASE_URL + '/images/icone_pause.png',
-              light: window.BRPROJECT_BASE_URL + '/images/icone_pause.png'
-            },
-            text: 'BRProject',
-            callback: function (t) {
-              console.log('Board button clicado (fallback)');
-              return t.popup({
-                title: 'BRProject - Controle de Tarefas',
-                url: window.BRPROJECT_BASE_URL + '/board-popup.html',
-                height: 500,
-                width: 380
-              });
-            }
-          }];
+      return [{
+        icon: window.BRPROJECT_BASE_URL + '/images/project.png',
+        text: 'BRProject',
+        callback: function (t) {
+          console.log('Board button clicado');
+          return t.popup({
+            title: 'BRProject - Controle de Tarefas',
+            url: window.BRPROJECT_BASE_URL + '/board-popup.html',
+            height: 500,
+            width: 380
+          });
         }
-      });
+      }];
     },
         
     'card-back-section': function(t, options) {
@@ -248,23 +77,11 @@ function initializePowerUp() {
           return { authorized: false };
         });
     },
+    
   });
   
   console.log('TrelloPowerUp inicializado com sucesso');
 }
-
-window.addEventListener('message', function(event) {
-  console.log('Mensagem recebida:', event.data);
-  if (event.data && event.data.type === 'brproject-task-status-changed') {
-    console.log('Recebida mensagem de mudança de status da tarefa');
-    clearTaskStatusCache();
-    
-    setTimeout(() => {
-      console.log('Recarregando página para atualizar board button');
-      window.location.reload();
-    }, 500);
-  }
-});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializePowerUp);
@@ -328,7 +145,18 @@ window.BRProjectUtils = {
   },
   
   getUserData: async function(t) {
-    return getUserDataSafe(t);
+    try {
+      const [token, url, usuario] = await Promise.all([
+        t.get('member', 'private', 'brproject-token'),
+        t.get('member', 'private', 'brproject-url'),
+        t.get('member', 'private', 'brproject-usuario')
+      ]);
+      
+      return { token, url, usuario };
+    } catch (e) {
+      console.error('Erro ao obter dados do usuário:', e);
+      return { token: null, url: null, usuario: null };
+    }
   },
   
   setUserData: async function(t, token, url, usuario) {
@@ -338,7 +166,6 @@ window.BRProjectUtils = {
         t.set('member', 'private', 'brproject-url', url),
         t.set('member', 'private', 'brproject-usuario', usuario)
       ]);
-      clearTaskStatusCache();
     } catch (e) {
       console.error('Erro ao salvar dados do usuário:', e);
     }
@@ -351,31 +178,8 @@ window.BRProjectUtils = {
         t.remove('member', 'private', 'brproject-url'),
         t.remove('member', 'private', 'brproject-usuario')
       ]);
-      clearTaskStatusCache();
     } catch (e) {
       console.error('Erro ao limpar dados do usuário:', e);
     }
-  },
-  
-  refreshBoardButton: function(t) {
-    clearTaskStatusCache();
-    
-    if (t && typeof t.closePopup === 'function') {
-      t.closePopup();
-    }
-    
-    try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-          type: 'brproject-task-status-changed'
-        }, '*');
-      }
-    } catch (e) {
-      console.log('Erro ao enviar mensagem para parent:', e);
-    }
-  },
-  
-  clearCache: function() {
-    clearTaskStatusCache();
   }
 };
