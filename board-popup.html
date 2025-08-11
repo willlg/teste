@@ -315,7 +315,7 @@
   <div class="brproject-container">
     <div class="brproject-header">
       <h3>BRProject</h3>
-      <div class="version">v2.0</div>
+      <div class="version">v2.1</div>
     </div>
     
     <div class="brproject-content">
@@ -350,6 +350,47 @@
       console.log('[DEBUG] DOM Ready');
       initializePowerUp();
     });
+
+    function refreshBoardButton() {
+      try {
+        console.log('[DEBUG] Tentando atualizar board button...');
+        
+        if (window.parent && window.parent.BRProjectUtils) {
+          console.log('[DEBUG] Atualizando cache via parent.BRProjectUtils');
+          window.parent.BRProjectUtils.refreshTaskStatus();
+        }
+        
+        if (t) {
+          console.log('[DEBUG] Notificando Trello sobre mudanças...');
+          setTimeout(function() {
+            try {
+              if (t.sizeTo) {
+                t.sizeTo('#brproject-root');
+              }
+            } catch (e) {
+              console.log('[DEBUG] Erro ao redimensionar:', e);
+            }
+          }, 100);
+        }
+        
+        console.log('[DEBUG] Board button refresh solicitado');
+      } catch (e) {
+        console.log('[DEBUG] Erro ao atualizar board button:', e);
+      }
+    }
+
+    function forceFullBoardRefresh() {
+      try {
+        console.log('[DEBUG] Tentando refresh completo da página...');
+        if (window.parent && window.parent.location) {
+          setTimeout(function() {
+            window.parent.location.reload();
+          }, 500);
+        }
+      } catch (e) {
+        console.log('[DEBUG] Não foi possível forçar refresh completo:', e);
+      }
+    }
 
     function initializePowerUp() {
       try {
@@ -396,6 +437,9 @@
         await t.set('member', 'private', 'brproject-token', token);
         await t.set('member', 'private', 'brproject-url', url);
         await t.set('member', 'private', 'brproject-usuario', usuario);
+        
+        console.log('[DEBUG] Dados do usuário salvos, atualizando board button...');
+        refreshBoardButton();
       } catch (e) {
         console.log('[DEBUG] Erro em setUserData:', e);
       }
@@ -411,6 +455,9 @@
         await t.remove('member', 'private', 'brproject-token');
         await t.remove('member', 'private', 'brproject-url');
         await t.remove('member', 'private', 'brproject-usuario');
+        
+        console.log('[DEBUG] Dados do usuário removidos, atualizando board button...');
+        refreshBoardButton();
       } catch (e) {
         console.log('[DEBUG] Erro em clearUserData:', e);
       }
@@ -679,11 +726,14 @@
           brproject.pararTarefa({
             success: function(data) {
               console.log('[DEBUG] Tarefa parada com sucesso:', data);
+              
+              refreshBoardButton();
+              
               renderUI({ 
                 logado: true, 
                 tarefasEmAndamento: [], 
                 usuario: null, 
-                feedback: {type:'success',msg:'Tarefa parada!'},
+                feedback: {type:'success',msg:'Tarefa parada com sucesso!'},
                 boardData: boardData
               });
             },

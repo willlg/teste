@@ -1,9 +1,15 @@
 console.log('client.js carregado');
 
 var ICON_BR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8dGV4dCB4PSI4IiB5PSIxMS41IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEuMjUiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJibGFjayIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QlI8L3RleHQ+Cjwvc3ZnPgo=';
-var ICON_PLAY = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNNC41IDIuNXYxMWw5LTUuNXoiIGZpbGw9ImJsYWNrIi8+Cjwvc3ZnPgo=';
-var ICON_PAUSE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cmVjdCB4PSIzLjUiIHk9IjIuNSIgd2lkdGg9IjMiIGhlaWdodD0iMTEiIGZpbGw9ImJsYWNrIi8+CiAgPHJlY3QgeD0iOS41IiB5PSIyLjUiIHdpZHRoPSIzIiBoZWlnaHQ9IjExIiBmaWxsPSJibGFjayIvPgo8L3N2Zz4K';
+var ICON_PLAY = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNNC41IDIuNXYxMWw5LTUuNXoiIGZpbGw9ImdyZWVuIi8+Cjwvc3ZnPgo=';
+var ICON_PAUSE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cmVjdCB4PSIzLjUiIHk9IjIuNSIgd2lkdGg9IjMiIGhlaWdodD0iMTEiIGZpbGw9InJlZCIvPgogIDxyZWN0IHg9IjkuNSIgeT0iMi41IiB3aWR0aD0iMyIgaGVpZ2h0PSIxMSIgZmlsbD0icmVkIi8+Cjwvc3ZnPgo=';
 var INVISIBLE_ICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cmVjdCB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9InRyYW5zcGFyZW50IiBvcGFjaXR5PSIwIi8+Cjwvc3ZnPg==';
+
+var cachedTaskStatus = {
+  hasRunningTask: false,
+  lastCheck: 0,
+  cacheValidFor: 30000 
+};
 
 function checkDependencies() {
   const dependencies = [
@@ -21,6 +27,80 @@ function checkDependencies() {
   return true;
 }
 
+async function checkRunningTask(t) {
+  try {
+    const now = Date.now();
+    if (now - cachedTaskStatus.lastCheck < cachedTaskStatus.cacheValidFor) {
+      console.log('Usando cache do status da tarefa:', cachedTaskStatus.hasRunningTask);
+      return cachedTaskStatus.hasRunningTask;
+    }
+
+    const [token, url] = await Promise.all([
+      t.get('member', 'private', 'brproject-token'),
+      t.get('member', 'private', 'brproject-url')
+    ]);
+
+    if (!token || !url) {
+      console.log('Token ou URL não encontrados');
+      cachedTaskStatus.hasRunningTask = false;
+      cachedTaskStatus.lastCheck = now;
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      if (typeof Brproject === 'undefined') {
+        console.log('Brproject não carregado ainda');
+        cachedTaskStatus.hasRunningTask = false;
+        cachedTaskStatus.lastCheck = now;
+        resolve(false);
+        return;
+      }
+
+      const brproject = new Brproject();
+      brproject.token = token;
+      brproject.url = url;
+
+      brproject.getUltimaTarefa({
+        success: function(data) {
+          console.log('checkRunningTask - getUltimaTarefa sucesso:', data);
+          let hasRunning = false;
+          
+          if (data.success && data.data && data.data.atividade && data.data.atividade.finalizada != 1) {
+            hasRunning = true;
+            console.log('Tarefa em execução encontrada:', data.data.atividade.tarefa.nome);
+          }
+          
+          cachedTaskStatus.hasRunningTask = hasRunning;
+          cachedTaskStatus.lastCheck = now;
+          resolve(hasRunning);
+        },
+        error: function(error) {
+          console.log('checkRunningTask - getUltimaTarefa erro:', error);
+          cachedTaskStatus.hasRunningTask = false;
+          cachedTaskStatus.lastCheck = now;
+          resolve(false);
+        }
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro ao verificar tarefa em execução:', error);
+    cachedTaskStatus.hasRunningTask = false;
+    cachedTaskStatus.lastCheck = Date.now();
+    return false;
+  }
+}
+
+async function getBoardButtonIcon(t) {
+  const hasRunningTask = await checkRunningTask(t);
+  return hasRunningTask ? ICON_PLAY : ICON_PAUSE;
+}
+
+async function getBoardButtonText(t) {
+  const hasRunningTask = await checkRunningTask(t);
+  return hasRunningTask ? 'BRProject (Ativo)' : 'BRProject';
+}
+
 function initializePowerUp() {
   if (!checkDependencies()) {
     console.error('Não foi possível inicializar o power-up devido a dependências faltando');
@@ -33,19 +113,39 @@ function initializePowerUp() {
   window.TrelloPowerUp.initialize({
     'board-buttons': function (t, options) {
       console.log('board-buttons inicializado');
-      return [{
-        icon: BRPROJECT_ICON,
-        text: 'BRProject',
-        callback: function (t) {
-          console.log('Board button clicado');
-          return t.popup({
-            title: 'BRProject - Controle de Tarefas',
-            url: window.BRPROJECT_BASE_URL + '/board-popup.html',
-            height: 500,
-            width: 380
-          });
-        }
-      }];
+      
+      return getBoardButtonIcon(t).then(function(icon) {
+        return getBoardButtonText(t).then(function(text) {
+          return [{
+            icon: icon,
+            text: text,
+            callback: function (t) {
+              console.log('Board button clicado');
+              return t.popup({
+                title: 'BRProject - Controle de Tarefas',
+                url: window.BRPROJECT_BASE_URL + '/board-popup.html',
+                height: 500,
+                width: 380
+              });
+            }
+          }];
+        });
+      }).catch(function(error) {
+        console.error('Erro ao obter ícone/texto do board button:', error);
+        return [{
+          icon: ICON_BR,
+          text: 'BRProject',
+          callback: function (t) {
+            console.log('Board button clicado (fallback)');
+            return t.popup({
+              title: 'BRProject - Controle de Tarefas',
+              url: window.BRPROJECT_BASE_URL + '/board-popup.html',
+              height: 500,
+              width: 380
+            });
+          }
+        }];
+      });
     },
         
     'card-back-section': function(t, options) {
@@ -170,6 +270,8 @@ window.BRProjectUtils = {
         t.set('member', 'private', 'brproject-url', url),
         t.set('member', 'private', 'brproject-usuario', usuario)
       ]);
+      
+      cachedTaskStatus.lastCheck = 0;
     } catch (e) {
       console.error('Erro ao salvar dados do usuário:', e);
     }
@@ -182,8 +284,19 @@ window.BRProjectUtils = {
         t.remove('member', 'private', 'brproject-url'),
         t.remove('member', 'private', 'brproject-usuario')
       ]);
+      
+      cachedTaskStatus.hasRunningTask = false;
+      cachedTaskStatus.lastCheck = 0;
     } catch (e) {
       console.error('Erro ao limpar dados do usuário:', e);
     }
+  },
+  
+  refreshTaskStatus: function() {
+    cachedTaskStatus.lastCheck = 0;
+  },
+  
+  checkTaskStatus: function(t) {
+    return checkRunningTask(t);
   }
 };
