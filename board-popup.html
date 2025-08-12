@@ -315,7 +315,7 @@
   <div class="brproject-container">
     <div class="brproject-header">
       <h3>BRProject</h3>
-      <div class="version">v2.0</div>
+      <div class="version">v2.1</div>
     </div>
     
     <div class="brproject-content">
@@ -411,6 +411,7 @@
         await t.remove('member', 'private', 'brproject-token');
         await t.remove('member', 'private', 'brproject-url');
         await t.remove('member', 'private', 'brproject-usuario');
+        await t.remove('board', 'shared', 'brproject-running-task');
       } catch (e) {
         console.log('[DEBUG] Erro em clearUserData:', e);
       }
@@ -454,6 +455,27 @@
       } catch (e) {
         console.log('[DEBUG] Erro em getBoardData:', e);
         return null;
+      }
+    }
+
+    async function updateBoardTaskStatus(isRunning, taskData) {
+      try {
+        if (!t) return;
+        
+        if (isRunning && taskData) {
+          await t.set('board', 'shared', 'brproject-running-task', {
+            isRunning: true,
+            cardId: taskData.referencia_id || null,
+            timestamp: Date.now(),
+            taskData: taskData
+          });
+        } else {
+          await t.remove('board', 'shared', 'brproject-running-task');
+        }
+        
+        console.log('[DEBUG] Status do board atualizado:', isRunning);
+      } catch (e) {
+        console.log('[DEBUG] Erro ao atualizar status do board:', e);
       }
     }
 
@@ -574,19 +596,25 @@
             success: function(data) {
               console.log('[DEBUG] getUltimaTarefa sucesso:', data);
               if (data.success && data.data.atividade.finalizada != 1) {
-                tarefasEmAndamento = [{
+                const taskData = {
                   idtarefa: data.data.atividade.tarefa.idtarefa,
                   nome: data.data.atividade.tarefa.nome,
                   descricao: data.data.atividade.tarefa.descricao,
                   referencia_id: data.data.atividade.tarefa.referencia_id,
                   data_inicio: data.data.atividade.data_inicio
-                }];
+                };
+                tarefasEmAndamento = [taskData];
+                
+                updateBoardTaskStatus(true, taskData);
+              } else {
+                updateBoardTaskStatus(false, null);
               }
               console.log('[DEBUG] Renderizando UI após getUltimaTarefa');
               renderUI({ logado, tarefasEmAndamento, usuario, feedback, boardData });
             },
             error: function(error) {
               console.log('[DEBUG] getUltimaTarefa erro:', error);
+              updateBoardTaskStatus(false, null);
               renderUI({ logado, tarefasEmAndamento, usuario, feedback, boardData });
             }
           });
@@ -679,6 +707,7 @@
           brproject.pararTarefa({
             success: function(data) {
               console.log('[DEBUG] Tarefa parada com sucesso:', data);
+              updateBoardTaskStatus(false, null);
               renderUI({ 
                 logado: true, 
                 tarefasEmAndamento: [], 
@@ -732,13 +761,17 @@
                   success: function(taskData) {
                     let tarefasEmAndamento = [];
                     if (taskData.success && taskData.data.atividade.finalizada != 1) {
-                      tarefasEmAndamento = [{
+                      const task = {
                         idtarefa: taskData.data.atividade.tarefa.idtarefa,
                         nome: taskData.data.atividade.tarefa.nome,
                         descricao: taskData.data.atividade.tarefa.descricao,
                         referencia_id: taskData.data.atividade.tarefa.referencia_id,
                         data_inicio: taskData.data.atividade.data_inicio
-                      }];
+                      };
+                      tarefasEmAndamento = [task];
+                      updateBoardTaskStatus(true, task);
+                    } else {
+                      updateBoardTaskStatus(false, null);
                     }
                     
                     renderUI({ 
@@ -750,6 +783,7 @@
                     });
                   },
                   error: function(error) {
+                    updateBoardTaskStatus(false, null);
                     renderUI({ 
                       logado: true, 
                       tarefasEmAndamento: [], 
