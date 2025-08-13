@@ -315,7 +315,7 @@
   <div class="brproject-container">
     <div class="brproject-header">
       <h3>BRProject</h3>
-      <div class="version">v2.1</div>
+      <div class="version">v2.0</div>
     </div>
     
     <div class="brproject-content">
@@ -345,22 +345,17 @@
 
     let t;
     let boardId = null;
-    let isInitialized = false; 
     
     document.addEventListener('DOMContentLoaded', function() {
       console.log('[DEBUG] DOM Ready');
-      if (!isInitialized) {
-        initializePowerUp();
-      }
+      initializePowerUp();
     });
 
     function initializePowerUp() {
-      if (isInitialized) { try{
+      try {
         console.log('[DEBUG] Antes do TrelloPowerUp.iframe');
         t = window.TrelloPowerUp.iframe();
         console.log('[DEBUG] Depois do TrelloPowerUp.iframe, t:', t);
-        
-        isInitialized = true; 
         
         t.render(function() {
           console.log('[DEBUG] Trello render callback executado');
@@ -369,15 +364,9 @@
         
       } catch (e) {
         console.log('[DEBUG] Erro ao chamar TrelloPowerUp.iframe:', e);
-        isInitialized = false;
-        setTimeout(() => {
-          if (!isInitialized) {
-            initializePowerUp();
-          }
-        }, 1000);
+        setTimeout(initializeApp, 1000);
       }
     }
-  }
 
     async function getUserData() {
       try {
@@ -422,7 +411,6 @@
         await t.remove('member', 'private', 'brproject-token');
         await t.remove('member', 'private', 'brproject-url');
         await t.remove('member', 'private', 'brproject-usuario');
-        await t.remove('board', 'shared', 'brproject-running-task');
       } catch (e) {
         console.log('[DEBUG] Erro em clearUserData:', e);
       }
@@ -456,43 +444,16 @@
       try {
         if (!t || !boardId) {
           console.log('[DEBUG] t ou boardId não disponível em getBoardData');
-          return { name: 'Board Atual' };
+          return null;
         }
         
-        const context = await t.getContext();
-        if (context && context.board) {
-          return { 
-            id: context.board, 
-            name: 'Board Atual'
-          };
-        }
-        
-        return { name: 'Board Atual' };
+        const board = await t.board('id', 'name', 'desc', 'url');
+        console.log('[DEBUG] Dados do board:', board);
+        return board;
         
       } catch (e) {
         console.log('[DEBUG] Erro em getBoardData:', e);
-        return { name: 'Board Atual' }; 
-      }
-    }
-
-    async function updateBoardTaskStatus(isRunning, taskData) {
-      try {
-        if (!t) return;
-        
-        if (isRunning && taskData) {
-          await t.set('board', 'shared', 'brproject-running-task', {
-            isRunning: true,
-            cardId: taskData.referencia_id || null,
-            timestamp: Date.now(),
-            taskData: taskData
-          });
-        } else {
-          await t.remove('board', 'shared', 'brproject-running-task');
-        }
-        
-        console.log('[DEBUG] Status do board atualizado:', isRunning);
-      } catch (e) {
-        console.log('[DEBUG] Erro ao atualizar status do board:', e);
+        return null;
       }
     }
 
@@ -501,10 +462,10 @@
       
       let html = '';
       
-      if (boardData && boardData.name) {
+      if (boardData) {
         html += `<div class="brproject-board-info">
           <strong>Board:</strong> 
-          <div class="board-name">${boardData.name}</div>
+          <div class="board-name">${boardData.name || 'N/A'}</div>
         </div>`;
       }
       
@@ -609,37 +570,31 @@
 
         if (logado) {
           console.log('[DEBUG] Verificando tarefas em andamento...');
-          await new Promise((resolve) => {
-            brproject.getUltimaTarefa({
-              success: function(data) {
-                console.log('[DEBUG] getUltimaTarefa sucesso:', data);
-                if (data.success && data.data.atividade.finalizada != 1) {
-                  const taskData = {
-                    idtarefa: data.data.atividade.tarefa.idtarefa,
-                    nome: data.data.atividade.tarefa.nome,
-                    descricao: data.data.atividade.tarefa.descricao,
-                    referencia_id: data.data.atividade.tarefa.referencia_id,
-                    data_inicio: data.data.atividade.data_inicio
-                  };
-                  tarefasEmAndamento = [taskData];
-                  
-                  updateBoardTaskStatus(true, taskData);
-                } else {
-                  updateBoardTaskStatus(false, null);
-                }
-                resolve();
-              },
-              error: function(error) {
-                console.log('[DEBUG] getUltimaTarefa erro:', error);
-                updateBoardTaskStatus(false, null);
-                resolve();
+          await brproject.getUltimaTarefa({
+            success: function(data) {
+              console.log('[DEBUG] getUltimaTarefa sucesso:', data);
+              if (data.success && data.data.atividade.finalizada != 1) {
+                tarefasEmAndamento = [{
+                  idtarefa: data.data.atividade.tarefa.idtarefa,
+                  nome: data.data.atividade.tarefa.nome,
+                  descricao: data.data.atividade.tarefa.descricao,
+                  referencia_id: data.data.atividade.tarefa.referencia_id,
+                  data_inicio: data.data.atividade.data_inicio
+                }];
               }
-            });
+              console.log('[DEBUG] Renderizando UI após getUltimaTarefa');
+              renderUI({ logado, tarefasEmAndamento, usuario, feedback, boardData });
+            },
+            error: function(error) {
+              console.log('[DEBUG] getUltimaTarefa erro:', error);
+              renderUI({ logado, tarefasEmAndamento, usuario, feedback, boardData });
+            }
           });
+        } else {
+          console.log('[DEBUG] Renderizando UI inicial');
+          renderUI({ logado, tarefasEmAndamento, usuario, feedback, boardData });
         }
 
-        console.log('[DEBUG] Renderizando UI inicial');
-        renderUI({ logado, tarefasEmAndamento, usuario, feedback, boardData });
         setupEventListeners(brproject, boardId, boardData);
         
       } catch (e) {
@@ -649,7 +604,7 @@
           tarefasEmAndamento: [], 
           usuario: null, 
           feedback: {type:'error', msg:'Erro ao inicializar aplicação'},
-          boardData: { name: 'Board Atual' }
+          boardData: null
         });
       }
     }
@@ -710,7 +665,7 @@
             tarefasEmAndamento: [], 
             usuario: null, 
             feedback: {type:'success',msg:'Logout realizado com sucesso!'},
-            boardData: boardData
+            boardData: null
           });
         }
 
@@ -724,7 +679,6 @@
           brproject.pararTarefa({
             success: function(data) {
               console.log('[DEBUG] Tarefa parada com sucesso:', data);
-              updateBoardTaskStatus(false, null);
               renderUI({ 
                 logado: true, 
                 tarefasEmAndamento: [], 
@@ -774,21 +728,17 @@
                 brproject.token = data.data.token;
                 brproject.url = url;
                 
-                brproject.getUltimaTarefa({
+                await brproject.getUltimaTarefa({
                   success: function(taskData) {
                     let tarefasEmAndamento = [];
                     if (taskData.success && taskData.data.atividade.finalizada != 1) {
-                      const task = {
+                      tarefasEmAndamento = [{
                         idtarefa: taskData.data.atividade.tarefa.idtarefa,
                         nome: taskData.data.atividade.tarefa.nome,
                         descricao: taskData.data.atividade.tarefa.descricao,
                         referencia_id: taskData.data.atividade.tarefa.referencia_id,
                         data_inicio: taskData.data.atividade.data_inicio
-                      };
-                      tarefasEmAndamento = [task];
-                      updateBoardTaskStatus(true, task);
-                    } else {
-                      updateBoardTaskStatus(false, null);
+                      }];
                     }
                     
                     renderUI({ 
@@ -800,7 +750,6 @@
                     });
                   },
                   error: function(error) {
-                    updateBoardTaskStatus(false, null);
                     renderUI({ 
                       logado: true, 
                       tarefasEmAndamento: [], 
@@ -828,15 +777,9 @@
     }
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function() {
-        if (!isInitialized) {
-          initializePowerUp();
-        }
-      });
+      document.addEventListener('DOMContentLoaded', initializePowerUp);
     } else {
-      if (!isInitialized) {
-        initializePowerUp();
-      }
+      initializePowerUp();
     }
   </script>
 </body>
