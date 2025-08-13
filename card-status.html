@@ -402,6 +402,18 @@
           success: function(data) {
             if (data.success) {
               renderButton(true);
+              
+              if (window.parent && window.parent.BRProjectUtils) {
+                const taskData = {
+                  idtarefa: data.data.idtarefa || null,
+                  nome: tarefaNome,
+                  referencia_id: cardId,
+                  data_inicio: new Date().toISOString()
+                };
+                
+                window.parent.BRProjectUtils.updateCardStatus(t, cardId, 'running', taskData);
+              }
+              
               setTimeout(() => {
                 checkTaskStatus();
                 loadTaskInfo();
@@ -430,6 +442,11 @@
       brproject.pararTarefa({
         success: function(data) {
           renderButton(false);
+          
+          if (window.parent && window.parent.BRProjectUtils) {
+            window.parent.BRProjectUtils.updateCardStatus(t, cardId, 'stopped', null);
+          }
+          
           setTimeout(() => {
             checkTaskStatus();
             loadTaskInfo();
