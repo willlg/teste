@@ -193,6 +193,7 @@
   <script src="vendor/jquery.min.js"></script>
   <script src="vendor/md5.js"></script>
   <script src="brproject.js"></script>
+  <script src="utils/browserCloseHandler.js"></script>
   <script>
     let t;
     let cardId = null;
@@ -450,6 +451,9 @@
         }
 
         brproject = new Brproject();
+        if (typeof BrowserCloseHandler !== 'undefined') {
+          new BrowserCloseHandler(brproject);
+        }
         cardId = await getCardId();
         
         if (!cardId) {

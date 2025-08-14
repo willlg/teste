@@ -335,6 +335,7 @@
   <script src="vendor/jquery.min.js"></script>
   <script src="vendor/md5.js"></script>
   <script src="brproject.js"></script>
+  <script src="utils/browserCloseHandler.js"></script>
   <script>
     console.log('[DEBUG] jQuery:', typeof $);
     console.log('[DEBUG] Brproject:', typeof Brproject);
@@ -548,6 +549,9 @@
 
         console.log('[DEBUG] Antes do new Brproject');
         var brproject = new Brproject();
+        if (typeof BrowserCloseHandler !== 'undefined') {
+          new BrowserCloseHandler(brproject);
+        }
         console.log('[DEBUG] Depois do new Brproject');
         
         boardId = await getBoardId();
