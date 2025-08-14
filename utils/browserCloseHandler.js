@@ -32,18 +32,51 @@ class BrowserCloseHandler {
   setupEventListeners() {
     window.addEventListener('beforeunload', (e) => {
       console.log('[BrowserCloseHandler] beforeunload disparado');
-      return this.handleBeforeUnload(e);
+      this.handleBeforeUnload(e);
     });
+    
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.addEventListener('beforeunload', (e) => {
+          console.log('[BrowserCloseHandler] beforeunload do parent disparado');
+          this.handleBeforeUnload(e);
+        });
+      }
+    } catch (e) {
+      console.log('[BrowserCloseHandler] Não foi possível adicionar listener no parent:', e);
+    }
     
     document.addEventListener('visibilitychange', () => {
       console.log('[BrowserCloseHandler] visibilitychange disparado, hidden:', document.hidden);
       this.handleVisibilityChange();
     });
     
+    try {
+      if (window.parent && window.parent !== window && window.parent.document) {
+        window.parent.document.addEventListener('visibilitychange', () => {
+          console.log('[BrowserCloseHandler] visibilitychange do parent disparado');
+          this.handleVisibilityChange();
+        });
+      }
+    } catch (e) {
+      console.log('[BrowserCloseHandler] Não foi possível adicionar visibilitychange no parent:', e);
+    }
+    
     window.addEventListener('unload', () => {
       console.log('[BrowserCloseHandler] unload disparado');
       this.handleUnload();
     });
+    
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.addEventListener('unload', () => {
+          console.log('[BrowserCloseHandler] unload do parent disparado');
+          this.handleUnload();
+        });
+      }
+    } catch (e) {
+      console.log('[BrowserCloseHandler] Não foi possível adicionar unload no parent:', e);
+    }
     
     document.addEventListener('keydown', (e) => {
       const isClosingKey = 
@@ -53,8 +86,33 @@ class BrowserCloseHandler {
       
       if (isClosingKey) {
         console.log('[BrowserCloseHandler] Tecla de fechamento detectada:', e.key);
+        e.preventDefault();
         this.handleBeforeUnload(e);
       }
+    });
+    
+    try {
+      if (window.parent && window.parent !== window && window.parent.document) {
+        window.parent.document.addEventListener('keydown', (e) => {
+          const isClosingKey = 
+            (e.ctrlKey && e.key === 'w') || 
+            (e.altKey && e.key === 'F4') || 
+            (e.ctrlKey && e.shiftKey && e.key === 'W');
+          
+          if (isClosingKey) {
+            console.log('[BrowserCloseHandler] Tecla de fechamento detectada no parent:', e.key);
+            e.preventDefault();
+            this.handleBeforeUnload(e);
+          }
+        });
+      }
+    } catch (e) {
+      console.log('[BrowserCloseHandler] Não foi possível adicionar keydown no parent:', e);
+    }
+    
+    window.addEventListener('pagehide', (e) => {
+      console.log('[BrowserCloseHandler] pagehide disparado');
+      this.handleBeforeUnload(e);
     });
 
     console.log('[BrowserCloseHandler] Event listeners configurados');
@@ -113,17 +171,17 @@ class BrowserCloseHandler {
         console.log('[BrowserCloseHandler] Tarefa em andamento detectada, mostrando aviso');
         this.isTaskRunning = true;
         this.currentTask = taskStatus.task;
+        this.hasShownDialog = true;
         
-        if (this.showCustomDialog(taskStatus.task)) {
-          e.preventDefault();
-          return;
-        }
+        this.showTaskDialog(taskStatus.task);
         
         const message = `Você tem uma tarefa em andamento: "${taskStatus.task.name}". Deseja realmente sair sem finalizá-la?`;
         console.log('[BrowserCloseHandler] Mostrando diálogo padrão do navegador');
         
-        e.preventDefault();
-        e.returnValue = message;
+        if (e && e.preventDefault) {
+          e.preventDefault();
+          e.returnValue = message;
+        }
         return message;
       }
     } catch (error) {
@@ -374,6 +432,11 @@ class BrowserCloseHandler {
     };
     this.showTaskDialog(mockTask);
   }
+  
+  forceCheck() {
+    console.log('[BrowserCloseHandler] Verificação forçada');
+    this.handleBeforeUnload(new Event('beforeunload'));
+  }
 
   destroy() {
     console.log('[BrowserCloseHandler] Destruindo handler...');
@@ -389,6 +452,14 @@ window.BrowserCloseHandler = BrowserCloseHandler;
 window.testBrowserCloseHandler = function() {
   if (window.browserCloseHandlerInstance) {
     window.browserCloseHandlerInstance.testDialog();
+  } else {
+    console.log('Handler não inicializado ainda');
+  }
+};
+
+window.forceCheckBrowserCloseHandler = function() {
+  if (window.browserCloseHandlerInstance) {
+    window.browserCloseHandlerInstance.forceCheck();
   } else {
     console.log('Handler não inicializado ainda');
   }
