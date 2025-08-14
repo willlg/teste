@@ -21,7 +21,22 @@ class BrowserCloseHandler {
     this.isInitialized = true;
     console.log('[BrowserCloseHandler] Inicializado com sucesso!');
     
+    this.updateInitialTaskState();
+
     this.testHandler();
+  }
+
+  async updateInitialTaskState() {
+    try {
+      const status = await this.checkRunningTask();
+      this.isTaskRunning = status.isRunning;
+      this.currentTask = status.task;
+      if (this.isTaskRunning) {
+        console.log('[BrowserCloseHandler] Estado inicial: tarefa em andamento detectada');
+      }
+    } catch (err) {
+      console.error('[BrowserCloseHandler] Erro ao obter estado inicial:', err);
+    }
   }
 
   testHandler() {
@@ -61,7 +76,7 @@ class BrowserCloseHandler {
       
       if (isClosingKey) {
         console.log('[BrowserCloseHandler] Tecla de fechamento detectada:', e.key);
-        this.handleBeforeUnload(e);
+        this.checkAndShowDialog();
       }
     });
 
@@ -157,19 +172,22 @@ class BrowserCloseHandler {
     console.log('[BrowserCloseHandler] handleBeforeUnload executado');
     
     if (this.hasShownDialog) {
-      return; 
+      return;
     }
     
+    if (this.isTaskRunning) {
+      const message = 'Você tem uma tarefa em andamento. Finalize-a antes de sair.';
+      console.log('[BrowserCloseHandler] isTaskRunning=true, solicitando prompt nativo');
+      if (e) {
+        e.preventDefault();
+        e.returnValue = message;
+      }
+      return message;
+    }
+
     this.checkAndShowDialog();
     
-    const message = 'Você tem alterações não salvas. Deseja realmente sair?';
-    
-    if (e) {
-      e.preventDefault();
-      e.returnValue = message;
-    }
-    
-    return message;
+    return undefined;
   }
 
   async checkAndShowDialog() {
@@ -181,6 +199,8 @@ class BrowserCloseHandler {
         this.isTaskRunning = true;
         this.currentTask = taskStatus.task;
         this.showTaskDialog(taskStatus.task);
+      } else {
+        this.isTaskRunning = false;
       }
     } catch (error) {
       console.error('[BrowserCloseHandler] Erro em checkAndShowDialog:', error);
@@ -384,7 +404,7 @@ class BrowserCloseHandler {
         
         if (success) {
           console.log('[BrowserCloseHandler] Tarefa finalizada com sucesso');
-          window.close();
+          try { window.close(); } catch (e) { }
         } else {
           console.log('[BrowserCloseHandler] Erro ao finalizar tarefa');
           this.hasShownDialog = false; 
@@ -459,7 +479,7 @@ class BrowserCloseHandler {
       } catch (error) {
         console.error('[BrowserCloseHandler] Erro no monitoramento:', error);
       }
-    }, 30000);
+    }, 5000);
   }
 
   testDialog() {
