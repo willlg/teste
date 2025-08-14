@@ -1,40 +1,78 @@
 class BrowserCloseHandler {
   constructor(brprojectInstance) {
+    console.log('[BrowserCloseHandler] Inicializando...');
     this.brproject = brprojectInstance;
     this.hasShownDialog = false;
     this.isTaskRunning = false;
     this.currentTask = null;
-    this.callbacks = {
-      onTaskRunning: null,
-      onTaskStopped: null
-    };
+    this.isInitialized = false;
     
-    this.init();
+    setTimeout(() => {
+      this.init();
+    }, 1000);
   }
 
   init() {
+    console.log('[BrowserCloseHandler] Configurando event listeners...');
     this.setupEventListeners();
     this.startTaskMonitoring();
+    this.isInitialized = true;
+    console.log('[BrowserCloseHandler] Inicializado com sucesso!');
+    
+    this.testHandler();
+  }
+
+  testHandler() {
+    console.log('[BrowserCloseHandler] Executando teste inicial...');
+    console.log('[BrowserCloseHandler] BRProject instance:', this.brproject);
+    console.log('[BrowserCloseHandler] Token:', this.brproject?.token ? 'Presente' : 'Ausente');
+    console.log('[BrowserCloseHandler] URL:', this.brproject?.url);
   }
 
   setupEventListeners() {
-    window.addEventListener('beforeunload', (e) => this.handleBeforeUnload(e));
+    window.addEventListener('beforeunload', (e) => {
+      console.log('[BrowserCloseHandler] beforeunload disparado');
+      return this.handleBeforeUnload(e);
+    });
     
-    document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
+    document.addEventListener('visibilitychange', () => {
+      console.log('[BrowserCloseHandler] visibilitychange disparado, hidden:', document.hidden);
+      this.handleVisibilityChange();
+    });
     
-    window.addEventListener('unload', () => this.handleUnload());
+    window.addEventListener('unload', () => {
+      console.log('[BrowserCloseHandler] unload disparado');
+      this.handleUnload();
+    });
     
-    document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+    document.addEventListener('keydown', (e) => {
+      const isClosingKey = 
+        (e.ctrlKey && e.key === 'w') || 
+        (e.altKey && e.key === 'F4') || 
+        (e.ctrlKey && e.shiftKey && e.key === 'W');
+      
+      if (isClosingKey) {
+        console.log('[BrowserCloseHandler] Tecla de fechamento detectada:', e.key);
+        this.handleBeforeUnload(e);
+      }
+    });
+
+    console.log('[BrowserCloseHandler] Event listeners configurados');
   }
 
   async checkRunningTask() {
+    console.log('[BrowserCloseHandler] Verificando tarefa em andamento...');
+    
     if (!this.brproject || !this.brproject.token) {
+      console.log('[BrowserCloseHandler] BRProject ou token não disponível');
       return { isRunning: false, task: null };
     }
 
     return new Promise((resolve) => {
       this.brproject.getUltimaTarefa({
         success: (data) => {
+          console.log('[BrowserCloseHandler] Resposta getUltimaTarefa:', data);
+          
           if (data.success && 
               data.data && 
               data.data.atividade &&
@@ -50,12 +88,15 @@ class BrowserCloseHandler {
               project: data.data.atividade.tarefa.projeto?.nome
             };
             
+            console.log('[BrowserCloseHandler] Tarefa em andamento encontrada:', task);
             resolve({ isRunning: true, task });
           } else {
+            console.log('[BrowserCloseHandler] Nenhuma tarefa em andamento');
             resolve({ isRunning: false, task: null });
           }
         },
-        error: () => {
+        error: (error) => {
+          console.log('[BrowserCloseHandler] Erro ao verificar tarefa:', error);
           resolve({ isRunning: false, task: null });
         }
       });
@@ -63,107 +104,136 @@ class BrowserCloseHandler {
   }
 
   async handleBeforeUnload(e) {
-    const taskStatus = await this.checkRunningTask();
+    console.log('[BrowserCloseHandler] handleBeforeUnload executado');
     
-    if (taskStatus.isRunning && !this.hasShownDialog) {
-      this.isTaskRunning = true;
-      this.currentTask = taskStatus.task;
+    try {
+      const taskStatus = await this.checkRunningTask();
       
-      if (this.callbacks.onTaskRunning) {
+      if (taskStatus.isRunning && !this.hasShownDialog) {
+        console.log('[BrowserCloseHandler] Tarefa em andamento detectada, mostrando aviso');
+        this.isTaskRunning = true;
+        this.currentTask = taskStatus.task;
+        
+        if (this.showCustomDialog(taskStatus.task)) {
+          e.preventDefault();
+          return;
+        }
+        
+        const message = `Você tem uma tarefa em andamento: "${taskStatus.task.name}". Deseja realmente sair sem finalizá-la?`;
+        console.log('[BrowserCloseHandler] Mostrando diálogo padrão do navegador');
+        
         e.preventDefault();
-        this.callbacks.onTaskRunning(this.currentTask);
-        return;
+        e.returnValue = message;
+        return message;
       }
-      
-      const message = `Você tem uma tarefa em andamento: "${taskStatus.task.name}". Deseja realmente sair sem finalizá-la?`;
-      e.preventDefault();
-      e.returnValue = message;
-      return message;
+    } catch (error) {
+      console.error('[BrowserCloseHandler] Erro em handleBeforeUnload:', error);
     }
   }
 
   async handleVisibilityChange() {
     if (document.hidden && !this.hasShownDialog) {
+      console.log('[BrowserCloseHandler] Aba ficou oculta, verificando tarefas...');
+      
       const taskStatus = await this.checkRunningTask();
       
       if (taskStatus.isRunning) {
+        console.log('[BrowserCloseHandler] Mostrando diálogo por visibilitychange');
         this.showTaskDialog(taskStatus.task);
       }
     }
   }
 
   handleUnload() {
+    console.log('[BrowserCloseHandler] handleUnload executado');
+    
     if (this.isTaskRunning && navigator.sendBeacon && this.brproject) {
       try {
-        const payload = JSON.stringify({ action: 'stop_task' });
-        const blob = new Blob([payload], { type: 'application/json' });
+        const url = `${this.brproject.url}/api/tarefa/parar`;
+        const data = new FormData();
+        data.append('action', 'stop_task');
         
-        navigator.sendBeacon(
-          `${this.brproject.url}/api/tarefa/parar`,
-          blob
-        );
+        console.log('[BrowserCloseHandler] Tentando sendBeacon para:', url);
+        const success = navigator.sendBeacon(url, data);
+        console.log('[BrowserCloseHandler] sendBeacon resultado:', success);
       } catch (error) {
-        console.error('Erro ao usar sendBeacon:', error);
+        console.error('[BrowserCloseHandler] Erro ao usar sendBeacon:', error);
       }
     }
   }
 
-  handleKeyDown(e) {
-    const isClosingKey = 
-      (e.ctrlKey && e.key === 'w') || 
-      (e.altKey && e.key === 'F4') || 
-      (e.ctrlKey && e.shiftKey && e.key === 'W'); 
-    
-    if (isClosingKey) {
-      this.handleBeforeUnload(e);
+  showCustomDialog(task) {
+    try {
+      if (window.parent !== window) {
+        console.log('[BrowserCloseHandler] Executando em iframe, usando diálogo padrão');
+        return false;
+      }
+      
+      this.showTaskDialog(task);
+      return true;
+    } catch (error) {
+      console.error('[BrowserCloseHandler] Erro ao mostrar diálogo personalizado:', error);
+      return false;
     }
   }
 
-  async showTaskDialog(task) {
+  showTaskDialog(task) {
+    console.log('[BrowserCloseHandler] Criando diálogo personalizado para tarefa:', task);
     this.hasShownDialog = true;
+    
+    const existingModal = document.querySelector('.brproject-close-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
     
     const modal = this.createTaskModal(task);
     document.body.appendChild(modal);
     
     modal.focus();
+    
+    console.log('[BrowserCloseHandler] Diálogo criado e adicionado ao DOM');
   }
 
   createTaskModal(task) {
     const modal = document.createElement('div');
     modal.className = 'brproject-close-modal';
     modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      background: rgba(0, 0, 0, 0.8) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 999999 !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
     `;
 
     const dialogBox = document.createElement('div');
     dialogBox.style.cssText = `
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      max-width: 500px;
-      margin: 20px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-      animation: modalSlideIn 0.3s ease-out;
+      background: white !important;
+      border-radius: 12px !important;
+      padding: 24px !important;
+      max-width: 500px !important;
+      margin: 20px !important;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+      animation: modalSlideIn 0.3s ease-out !important;
+      position: relative !important;
     `;
 
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes modalSlideIn {
-        from { transform: scale(0.9); opacity: 0; }
-        to { transform: scale(1); opacity: 1; }
-      }
-    `;
-    document.head.appendChild(style);
+    if (!document.querySelector('#brproject-modal-styles')) {
+      const style = document.createElement('style');
+      style.id = 'brproject-modal-styles';
+      style.textContent = `
+        @keyframes modalSlideIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
 
     dialogBox.innerHTML = `
       <div style="display: flex; align-items: center; margin-bottom: 16px;">
@@ -186,11 +256,11 @@ class BrowserCloseHandler {
           </svg>
           <strong style="color: #1976d2;">Tarefa Ativa:</strong>
         </div>
-        <p style="margin: 0 0 8px 0; color: #1976d2; font-weight: 500;">${task.name}</p>
+        <p style="margin: 0 0 8px 0; color: #1976d2; font-weight: 500;">${task.name || 'Tarefa sem nome'}</p>
         <div style="font-size: 12px; color: #1565c0;">
           <div>Cliente: ${task.client || 'Não informado'}</div>
           <div>Projeto: ${task.project || 'Não informado'}</div>
-          <div>Iniciado: ${new Date(task.startTime).toLocaleString()}</div>
+          <div>Iniciado: ${task.startTime ? new Date(task.startTime).toLocaleString() : 'N/A'}</div>
         </div>
       </div>
       
@@ -231,18 +301,22 @@ class BrowserCloseHandler {
     const continueBtn = dialogBox.querySelector('#continue-task-btn');
 
     stopBtn.addEventListener('click', async () => {
+      console.log('[BrowserCloseHandler] Usuário escolheu finalizar tarefa');
       stopBtn.disabled = true;
       stopBtn.textContent = 'Finalizando...';
       
-      await this.stopCurrentTask();
+      const success = await this.stopCurrentTask();
       document.body.removeChild(modal);
       
-      if (this.callbacks.onTaskStopped) {
-        this.callbacks.onTaskStopped();
+      if (success) {
+        console.log('[BrowserCloseHandler] Tarefa finalizada com sucesso');
+      } else {
+        console.log('[BrowserCloseHandler] Erro ao finalizar tarefa');
       }
     });
 
     continueBtn.addEventListener('click', () => {
+      console.log('[BrowserCloseHandler] Usuário escolheu continuar tarefa');
       document.body.removeChild(modal);
       this.hasShownDialog = false;
     });
@@ -251,17 +325,23 @@ class BrowserCloseHandler {
   }
 
   async stopCurrentTask() {
-    if (!this.brproject) return false;
+    console.log('[BrowserCloseHandler] Tentando parar tarefa atual...');
+    
+    if (!this.brproject) {
+      console.log('[BrowserCloseHandler] BRProject não disponível');
+      return false;
+    }
 
     return new Promise((resolve) => {
       this.brproject.pararTarefa({
         success: (data) => {
+          console.log('[BrowserCloseHandler] Tarefa parada com sucesso:', data);
           this.isTaskRunning = false;
           this.currentTask = null;
           resolve(true);
         },
         error: (error) => {
-          console.error('Erro ao parar tarefa:', error);
+          console.error('[BrowserCloseHandler] Erro ao parar tarefa:', error);
           resolve(false);
         }
       });
@@ -269,24 +349,49 @@ class BrowserCloseHandler {
   }
 
   startTaskMonitoring() {
+    console.log('[BrowserCloseHandler] Iniciando monitoramento de tarefas...');
+    
     setInterval(async () => {
+      if (!this.isInitialized) return;
+      
       const taskStatus = await this.checkRunningTask();
       this.isTaskRunning = taskStatus.isRunning;
       this.currentTask = taskStatus.task;
+      
+      if (taskStatus.isRunning) {
+        console.log('[BrowserCloseHandler] Monitoramento: Tarefa em andamento -', taskStatus.task.name);
+      }
     }, 30000);
   }
 
-  setCallback(event, callback) {
-    if (this.callbacks.hasOwnProperty(event)) {
-      this.callbacks[event] = callback;
-    }
+  testDialog() {
+    console.log('[BrowserCloseHandler] Teste manual do diálogo');
+    const mockTask = {
+      name: 'Teste - Tarefa de Exemplo',
+      client: 'Cliente Teste',
+      project: 'Projeto Teste',
+      startTime: new Date().toISOString()
+    };
+    this.showTaskDialog(mockTask);
   }
 
   destroy() {
+    console.log('[BrowserCloseHandler] Destruindo handler...');
     this.hasShownDialog = false;
     this.isTaskRunning = false;
     this.currentTask = null;
+    this.isInitialized = false;
   }
 }
 
 window.BrowserCloseHandler = BrowserCloseHandler;
+
+window.testBrowserCloseHandler = function() {
+  if (window.browserCloseHandlerInstance) {
+    window.browserCloseHandlerInstance.testDialog();
+  } else {
+    console.log('Handler não inicializado ainda');
+  }
+};
+
+console.log('[BrowserCloseHandler] Script carregado com sucesso');
