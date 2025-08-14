@@ -83,22 +83,6 @@ function initializePowerUp() {
           return { authorized: false };
         });
     },
-
-    'card-buttons': function(t, options) {
-      return t.get('member', 'private', 'brproject-token')
-        .then(function(token) {
-          if (token) {
-            initializeBrowserCloseHandlerIfNeeded(t);
-            return [];
-          }
-          return [];
-        })
-        .catch(function(error) {
-          console.error('Erro em card-buttons:', error);
-          return [];
-        });
-    },
-    
   });
   
   console.log('TrelloPowerUp inicializado com sucesso');

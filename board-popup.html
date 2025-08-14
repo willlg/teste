@@ -309,67 +309,19 @@
       display: flex;
       gap: 8px;
     }
-
-    .brproject-test-buttons {
-      margin-top: 16px;
-      padding: 16px;
-      background: #f8f9fa;
-      border-radius: 6px;
-      border: 1px solid #e0e0e0;
-    }
-
-    .brproject-test-buttons h5 {
-      margin: 0 0 8px 0;
-      font-size: 12px;
-      color: #666;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .brproject-test-buttons .button-group {
-      display: flex;
-      gap: 8px;
-    }
-
-    .brproject-test-button {
-      padding: 6px 12px;
-      font-size: 11px;
-      background: #6c757d;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .brproject-test-button:hover {
-      background: #5a6268;
-    }
   </style>
 </head>
 <body>
   <div class="brproject-container">
     <div class="brproject-header">
       <h3>BRProject</h3>
-      <div class="version">v2.1</div>
+      <div class="version">v2.0</div>
     </div>
     
     <div class="brproject-content">
       <div id="brproject-root">
         <div class="brproject-loading" style="margin: 20px auto; display: block;"></div>
         <div style="text-align: center; color: #666; margin-top: 8px;">Carregando...</div>
-      </div>
-
-      <!-- Botões de teste para desenvolvimento -->
-      <div class="brproject-test-buttons" style="display: none;" id="test-buttons">
-        <h5>Testes de Desenvolvimento</h5>
-        <div class="button-group">
-          <button class="brproject-test-button" onclick="testBrowserCloseHandler()">
-            Testar Diálogo
-          </button>
-          <button class="brproject-test-button" onclick="forceCheckBrowserCloseHandler()">
-            Verificar Tarefa
-          </button>
-        </div>
       </div>
     </div>
     
@@ -379,7 +331,6 @@
   </div>
 
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
-  <script src="utils/browserCloseHandler.js"></script>
   <script src="config.js"></script>
   <script src="vendor/jquery.min.js"></script>
   <script src="vendor/md5.js"></script>
@@ -394,7 +345,6 @@
 
     let t;
     let boardId = null;
-    let globalBrowserCloseHandler = null;
     
     document.addEventListener('DOMContentLoaded', function() {
       console.log('[DEBUG] DOM Ready');
@@ -497,48 +447,12 @@
           return null;
         }
         
-        const board = await t.board('name');
+        const board = await t.board('id', 'name', 'desc', 'url');
         console.log('[DEBUG] Dados do board:', board);
         return board;
         
       } catch (e) {
         console.log('[DEBUG] Erro em getBoardData:', e);
-        return null;
-      }
-    }
-
-    async function initializeBrowserCloseHandler(brproject) {
-      try {
-        if (globalBrowserCloseHandler) {
-          console.log('[BrowserCloseHandler] Instância já existe');
-          return globalBrowserCloseHandler;
-        }
-
-        if (typeof BrowserCloseHandler === 'undefined') {
-          console.error('[BrowserCloseHandler] Classe não disponível');
-          return null;
-        }
-
-        if (!brproject || !brproject.token) {
-          console.log('[BrowserCloseHandler] BRProject ou token não disponível');
-          return null;
-        }
-
-        console.log('[BrowserCloseHandler] Inicializando nova instância...');
-        globalBrowserCloseHandler = new BrowserCloseHandler(brproject);
-        
-        window.browserCloseHandlerInstance = globalBrowserCloseHandler;
-        
-        const testButtons = document.getElementById('test-buttons');
-        if (testButtons && window.location.hostname.includes('vercel')) {
-          testButtons.style.display = 'block';
-        }
-        
-        console.log('[BrowserCloseHandler] Inicializado com sucesso');
-        return globalBrowserCloseHandler;
-        
-      } catch (error) {
-        console.error('[BrowserCloseHandler] Erro ao inicializar:', error);
         return null;
       }
     }
@@ -656,9 +570,6 @@
 
         if (logado) {
           console.log('[DEBUG] Verificando tarefas em andamento...');
-          
-          await initializeBrowserCloseHandler(brproject);
-          
           await brproject.getUltimaTarefa({
             success: function(data) {
               console.log('[DEBUG] getUltimaTarefa sucesso:', data);
@@ -746,13 +657,6 @@
 
         if (target.id === 'btn-logout-sim') {
           console.log('[DEBUG] Logout confirmado');
-          
-          if (globalBrowserCloseHandler) {
-            globalBrowserCloseHandler.destroy();
-            globalBrowserCloseHandler = null;
-            window.browserCloseHandlerInstance = null;
-          }
-          
           await clearUserData();
           brproject.token = null;
           brproject.url = null;
@@ -775,12 +679,6 @@
           brproject.pararTarefa({
             success: function(data) {
               console.log('[DEBUG] Tarefa parada com sucesso:', data);
-              
-              if (globalBrowserCloseHandler) {
-                globalBrowserCloseHandler.isTaskRunning = false;
-                globalBrowserCloseHandler.currentTask = null;
-              }
-              
               renderUI({ 
                 logado: true, 
                 tarefasEmAndamento: [], 
@@ -830,8 +728,6 @@
                 brproject.token = data.data.token;
                 brproject.url = url;
                 
-                await initializeBrowserCloseHandler(brproject);
-                
                 await brproject.getUltimaTarefa({
                   success: function(taskData) {
                     let tarefasEmAndamento = [];
@@ -879,12 +775,6 @@
         }
       });
     }
-
-    window.addEventListener('beforeunload', function() {
-      if (globalBrowserCloseHandler) {
-        globalBrowserCloseHandler.destroy();
-      }
-    });
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initializePowerUp);
