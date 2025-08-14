@@ -199,6 +199,7 @@
     let cardId = null;
     let brproject = null;
     let taskData = null;
+    let globalBrowserCloseHandler = null;
     
     document.addEventListener('DOMContentLoaded', function() {
       initializeCardStatus();
@@ -250,6 +251,37 @@
         const card = await t.card('id', 'name', 'desc');
         return card;
       } catch (e) {
+        return null;
+      }
+    }
+
+    async function initializeBrowserCloseHandler(brproject) {
+      try {
+        if (globalBrowserCloseHandler) {
+          console.log('[BrowserCloseHandler] Instância já existe no card');
+          return globalBrowserCloseHandler;
+        }
+
+        if (typeof BrowserCloseHandler === 'undefined') {
+          console.error('[BrowserCloseHandler] Classe não disponível no card');
+          return null;
+        }
+
+        if (!brproject || !brproject.token) {
+          console.log('[BrowserCloseHandler] BRProject ou token não disponível no card');
+          return null;
+        }
+
+        console.log('[BrowserCloseHandler] Inicializando nova instância no card...');
+        globalBrowserCloseHandler = new BrowserCloseHandler(brproject);
+        
+        window.browserCloseHandlerInstance = globalBrowserCloseHandler;
+        
+        console.log('[BrowserCloseHandler] Inicializado com sucesso no card');
+        return globalBrowserCloseHandler;
+        
+      } catch (error) {
+        console.error('[BrowserCloseHandler] Erro ao inicializar no card:', error);
         return null;
       }
     }
@@ -403,6 +435,17 @@
           success: function(data) {
             if (data.success) {
               renderButton(true);
+              
+              if (globalBrowserCloseHandler) {
+                globalBrowserCloseHandler.isTaskRunning = true;
+                globalBrowserCloseHandler.currentTask = {
+                  id: data.data?.idtarefa,
+                  name: tarefaNome,
+                  referenceId: cardId,
+                  startTime: new Date().toISOString()
+                };
+              }
+              
               setTimeout(() => {
                 checkTaskStatus();
                 loadTaskInfo();
@@ -431,6 +474,12 @@
       brproject.pararTarefa({
         success: function(data) {
           renderButton(false);
+          
+          if (globalBrowserCloseHandler) {
+            globalBrowserCloseHandler.isTaskRunning = false;
+            globalBrowserCloseHandler.currentTask = null;
+          }
+          
           setTimeout(() => {
             checkTaskStatus();
             loadTaskInfo();
@@ -451,13 +500,7 @@
         }
 
         brproject = new Brproject();
-        console.log('Inicializando BrowserCloseHandler...');
-        if (typeof BrowserCloseHandler !== 'undefined') {
-          window.browserCloseHandlerInstance = new BrowserCloseHandler(brproject);
-          console.log('BrowserCloseHandler inicializado com sucesso');
-        } else {
-          console.error('BrowserCloseHandler não encontrado!');
-        }
+        
         cardId = await getCardId();
         
         if (!cardId) {
@@ -478,6 +521,8 @@
         brproject.token = token;
         brproject.url = url;
 
+        await initializeBrowserCloseHandler(brproject);
+
         const isRunning = await checkTaskStatus();
         renderButton(isRunning);
         
@@ -497,6 +542,12 @@
           '<button class="brproject-button brproject-button-start" disabled>Erro ao carregar</button>';
       }
     }
+
+    window.addEventListener('beforeunload', function() {
+      if (globalBrowserCloseHandler) {
+        globalBrowserCloseHandler.destroy();
+      }
+    });
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initializeCardStatus);
