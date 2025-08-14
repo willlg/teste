@@ -335,7 +335,6 @@
   <script src="vendor/jquery.min.js"></script>
   <script src="vendor/md5.js"></script>
   <script src="brproject.js"></script>
-  <script src="utils/browserCloseHandler.js"></script>
   <script>
     console.log('[DEBUG] jQuery:', typeof $);
     console.log('[DEBUG] Brproject:', typeof Brproject);
@@ -562,15 +561,6 @@
         
         brproject.token = token;
         brproject.url = url;
-
-        try {
-          if (window.BrowserCloseHandler && !window.browserCloseHandlerInstance && brproject.token) {
-            window.browserCloseHandlerInstance = new BrowserCloseHandler(brproject);
-            console.log('[board-popup] BrowserCloseHandler inicializado');
-          }
-        } catch (err) {
-          console.error('[board-popup] Erro ao inicializar BrowserCloseHandler:', err);
-        }
 
         let logado = !!token && !!url;
         let tarefasEmAndamento = [];

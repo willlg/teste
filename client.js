@@ -5,8 +5,6 @@ var ICON_PLAY = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vc
 var ICON_PAUSE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cmVjdCB4PSIzLjUiIHk9IjIuNSIgd2lkdGg9IjMiIGhlaWdodD0iMTEiIGZpbGw9ImJsYWNrIi8+CiAgPHJlY3QgeD0iOS41IiB5PSIyLjUiIHdpZHRoPSIzIiBoZWlnaHQ9IjExIiBmaWxsPSJibGFjayIvPgo8L3N2Zz4K';
 var INVISIBLE_ICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cmVjdCB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9InRyYW5zcGFyZW50IiBvcGFjaXR5PSIwIi8+Cjwvc3ZnPg==';
 
-let globalBrowserCloseHandler = null;
-
 function checkDependencies() {
   const dependencies = [
     { name: 'TrelloPowerUp', obj: window.TrelloPowerUp },
@@ -43,8 +41,8 @@ function initializePowerUp() {
           return t.popup({
             title: 'BRProject - Controle de Tarefas',
             url: window.BRPROJECT_BASE_URL + '/board-popup.html',
-            height: 520,
-            width: 400
+            height: 500,
+            width: 380
           });
         }
       }];
@@ -83,51 +81,10 @@ function initializePowerUp() {
           return { authorized: false };
         });
     },
+    
   });
   
   console.log('TrelloPowerUp inicializado com sucesso');
-}
-
-async function initializeBrowserCloseHandlerIfNeeded(t) {
-  try {
-    if (globalBrowserCloseHandler) {
-      console.log('[BrowserCloseHandler] Instância já existe');
-      return globalBrowserCloseHandler;
-    }
-
-    if (typeof Brproject === 'undefined') {
-      console.log('[BrowserCloseHandler] Brproject não disponível ainda');
-      return null;
-    }
-
-    if (typeof BrowserCloseHandler === 'undefined') {
-      console.log('[BrowserCloseHandler] BrowserCloseHandler não disponível ainda');
-      return null;
-    }
-
-    const userData = await BRProjectUtils.getUserData(t);
-    
-    if (!userData.token || !userData.url) {
-      console.log('[BrowserCloseHandler] Usuário não está logado');
-      return null;
-    }
-
-    const brproject = new Brproject();
-    brproject.token = userData.token;
-    brproject.url = userData.url;
-
-    console.log('[BrowserCloseHandler] Criando nova instância...');
-    globalBrowserCloseHandler = new BrowserCloseHandler(brproject);
-    
-    window.browserCloseHandlerInstance = globalBrowserCloseHandler;
-    
-    console.log('[BrowserCloseHandler] Instância criada com sucesso');
-    return globalBrowserCloseHandler;
-    
-  } catch (error) {
-    console.error('[BrowserCloseHandler] Erro ao inicializar:', error);
-    return null;
-  }
 }
 
 if (document.readyState === 'loading') {
@@ -228,9 +185,5 @@ window.BRProjectUtils = {
     } catch (e) {
       console.error('Erro ao limpar dados do usuário:', e);
     }
-  },
-
-  initializeBrowserCloseHandler: async function(t) {
-    return await initializeBrowserCloseHandlerIfNeeded(t);
   }
 };
