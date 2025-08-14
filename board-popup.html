@@ -331,11 +331,11 @@
   </div>
 
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <script src="utils/browserCloseHandler.js"></script>
   <script src="config.js"></script>
   <script src="vendor/jquery.min.js"></script>
   <script src="vendor/md5.js"></script>
   <script src="brproject.js"></script>
-  <script src="utils/browserCloseHandler.js"></script>
   <script>
     console.log('[DEBUG] jQuery:', typeof $);
     console.log('[DEBUG] Brproject:', typeof Brproject);
@@ -549,8 +549,12 @@
 
         console.log('[DEBUG] Antes do new Brproject');
         var brproject = new Brproject();
+        console.log('Inicializando BrowserCloseHandler...');
         if (typeof BrowserCloseHandler !== 'undefined') {
-          new BrowserCloseHandler(brproject);
+          window.browserCloseHandlerInstance = new BrowserCloseHandler(brproject);
+          console.log('BrowserCloseHandler inicializado com sucesso');
+        } else {
+          console.error('BrowserCloseHandler não encontrado!');
         }
         console.log('[DEBUG] Depois do new Brproject');
         
