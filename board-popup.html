@@ -485,9 +485,10 @@
 
         if (tarefasEmAndamento && tarefasEmAndamento.length > 0) {
           html += `<div class="brproject-running-tasks">
-            <h4 style="margin: 0 0 8px 0; color: #856404;">Tarefas em Andamento:</h4>`;
+            <h4 style="margin: 0 0 8px 0; color: #856404;">Última Tarefa:</h4>`;
           
           tarefasEmAndamento.forEach(tarefa => {
+            const rodando = !!tarefa.rodando;
             html += `
               <div class="brproject-running-task">
                 <div class="task-info">
@@ -496,9 +497,10 @@
                   <div style="font-size: 11px; color: #666;">Iniciado: ${tarefa.data_inicio || 'N/A'}</div>
                 </div>
                 <div class="task-actions">
-                  <button class="btn-parar-tarefa brproject-button brproject-button-danger" data-tarefa-id="${tarefa.idtarefa}" style="padding: 6px 12px; font-size: 12px;">
-                    Parar
-                  </button>
+                  ${rodando 
+                    ? `<button class="btn-parar-tarefa brproject-button brproject-button-danger" data-tarefa-id="${tarefa.idtarefa || ''}" style="padding: 6px 12px; font-size: 12px;">Parar</button>`
+                    : `<button class="btn-iniciar-tarefa brproject-button brproject-button-primary" data-tarefa-id="${tarefa.idtarefa || ''}" data-referencia-id="${tarefa.referencia_id || ''}" data-nome="${encodeURIComponent(tarefa.nome || '')}" data-descricao="${encodeURIComponent(tarefa.descricao || '')}" style="padding: 6px 12px; font-size: 12px;">Iniciar</button>`
+                  }
                 </div>
               </div>
             `;
@@ -507,7 +509,7 @@
           html += `</div>`;
         } else {
           html += `<div style="text-align: center; padding: 20px; color: #666; font-style: italic;">
-            Nenhuma tarefa em andamento no momento.
+            Nenhuma tarefa encontrada.
           </div>`;
         }
       }
@@ -569,17 +571,19 @@
         console.log('[DEBUG] Estado inicial:', { logado, boardId });
 
         if (logado) {
-          console.log('[DEBUG] Verificando tarefas em andamento...');
+          console.log('[DEBUG] Verificando última tarefa...');
           await brproject.getUltimaTarefa({
             success: function(data) {
               console.log('[DEBUG] getUltimaTarefa sucesso:', data);
-              if (data.success && data.data.atividade.finalizada != 1) {
+              if (data && data.success && data.data && data.data.atividade && data.data.atividade.tarefa) {
+                const at = data.data.atividade;
                 tarefasEmAndamento = [{
-                  idtarefa: data.data.atividade.tarefa.idtarefa,
-                  nome: data.data.atividade.tarefa.nome,
-                  descricao: data.data.atividade.tarefa.descricao,
-                  referencia_id: data.data.atividade.tarefa.referencia_id,
-                  data_inicio: data.data.atividade.data_inicio
+                  idtarefa: at.tarefa.idtarefa,
+                  nome: at.tarefa.nome,
+                  descricao: at.tarefa.descricao,
+                  referencia_id: at.tarefa.referencia_id,
+                  data_inicio: at.data_inicio,
+                  rodando: (at.finalizada != 1)
                 }];
               }
               console.log('[DEBUG] Renderizando UI após getUltimaTarefa');
@@ -595,7 +599,7 @@
           renderUI({ logado, tarefasEmAndamento, usuario, feedback, boardData });
         }
 
-        setupEventListeners(brproject, boardId, boardData);
+        setupEventListeners(brproject, boardId, boardData, usuario);
         
       } catch (e) {
         console.log('[DEBUG] Erro no initializeApp:', e);
@@ -609,13 +613,36 @@
       }
     }
 
-    function setupEventListeners(brproject, boardId, boardData) {
+    function setupEventListeners(brproject, boardId, boardData, usuario) {
       console.log('[DEBUG] Configurando event listeners');
       
       const root = document.getElementById('brproject-root');
       if (!root) {
         console.log('[DEBUG] Root não encontrado para event listeners');
         return;
+      }
+
+      function refreshLastTaskAndRender(feedback) {
+        let tarefas = [];
+        brproject.getUltimaTarefa({
+          success: function(data) {
+            if (data && data.success && data.data && data.data.atividade && data.data.atividade.tarefa) {
+              const at = data.data.atividade;
+              tarefas = [{
+                idtarefa: at.tarefa.idtarefa,
+                nome: at.tarefa.nome,
+                descricao: at.tarefa.descricao,
+                referencia_id: at.tarefa.referencia_id,
+                data_inicio: at.data_inicio,
+                rodando: (at.finalizada != 1)
+              }];
+            }
+            renderUI({ logado: true, tarefasEmAndamento: tarefas, usuario: usuario, feedback: feedback || null, boardData: boardData });
+          },
+          error: function(err) {
+            renderUI({ logado: true, tarefasEmAndamento: [], usuario: usuario, feedback: feedback || null, boardData: boardData });
+          }
+        });
       }
 
       root.addEventListener('click', async function(e) {
@@ -646,13 +673,13 @@
 
         if (target.id === 'btn-logout') {
           console.log('[DEBUG] Botão logout clicado');
-          const { token, url, usuario } = await getUserData();
-          renderLogoutConfirm(usuario);
+          const ud = await getUserData();
+          renderLogoutConfirm(ud.usuario);
         }
 
         if (target.id === 'btn-logout-nao') {
           console.log('[DEBUG] Logout cancelado');
-          location.reload(); 
+          refreshLastTaskAndRender(null);
         }
 
         if (target.id === 'btn-logout-sim') {
@@ -679,25 +706,43 @@
           brproject.pararTarefa({
             success: function(data) {
               console.log('[DEBUG] Tarefa parada com sucesso:', data);
-              renderUI({ 
-                logado: true, 
-                tarefasEmAndamento: [], 
-                usuario: null, 
-                feedback: {type:'success',msg:'Tarefa parada!'},
-                boardData: boardData
-              });
+              refreshLastTaskAndRender({type:'success', msg:'Tarefa parada!'});
             },
             error: function(error) {
               console.log('[DEBUG] Erro ao parar tarefa:', error);
               target.disabled = false;
               target.innerHTML = 'Parar';
-              renderUI({ 
-                logado: true, 
-                tarefasEmAndamento: [], 
-                usuario: null, 
-                feedback: {type:'error',msg: 'Erro ao parar tarefa'},
-                boardData: boardData
-              });
+              refreshLastTaskAndRender({type:'error', msg: 'Erro ao parar tarefa'});
+            }
+          });
+        }
+
+        if (target.classList.contains('btn-iniciar-tarefa')) {
+          console.log('[DEBUG] Botão iniciar tarefa clicado');
+          const tarefaId = target.getAttribute('data-tarefa-id');
+          const referencia = target.getAttribute('data-referencia-id') || null;
+          const nome = decodeURIComponent(target.getAttribute('data-nome') || '');
+          const descricao = decodeURIComponent(target.getAttribute('data-descricao') || '');
+          
+          target.disabled = true;
+          target.innerHTML = '<span class="brproject-loading"></span>Iniciando...';
+
+          const tarefaObj = {};
+          if (tarefaId) tarefaObj.idtarefa = tarefaId;
+          if (referencia) tarefaObj.referencia_id = referencia;
+          tarefaObj.nome = nome;
+          tarefaObj.descricao = descricao;
+
+          brproject.iniciarTarefa(tarefaObj, {
+            success: function(data) {
+              console.log('[DEBUG] Tarefa iniciada com sucesso:', data);
+              refreshLastTaskAndRender({type:'success', msg:'Tarefa iniciada!'});
+            },
+            error: function(error) {
+              console.log('[DEBUG] Erro ao iniciar tarefa:', error);
+              target.disabled = false;
+              target.innerHTML = 'Iniciar';
+              refreshLastTaskAndRender({type:'error', msg:'Erro ao iniciar tarefa'});
             }
           });
         }
@@ -728,22 +773,24 @@
                 brproject.token = data.data.token;
                 brproject.url = url;
                 
-                await brproject.getUltimaTarefa({
+                brproject.getUltimaTarefa({
                   success: function(taskData) {
-                    let tarefasEmAndamento = [];
-                    if (taskData.success && taskData.data.atividade.finalizada != 1) {
-                      tarefasEmAndamento = [{
-                        idtarefa: taskData.data.atividade.tarefa.idtarefa,
-                        nome: taskData.data.atividade.tarefa.nome,
-                        descricao: taskData.data.atividade.tarefa.descricao,
-                        referencia_id: taskData.data.atividade.tarefa.referencia_id,
-                        data_inicio: taskData.data.atividade.data_inicio
+                    let tarefas = [];
+                    if (taskData && taskData.success && taskData.data && taskData.data.atividade && taskData.data.atividade.tarefa) {
+                      const at = taskData.data.atividade;
+                      tarefas = [{
+                        idtarefa: at.tarefa.idtarefa,
+                        nome: at.tarefa.nome,
+                        descricao: at.tarefa.descricao,
+                        referencia_id: at.tarefa.referencia_id,
+                        data_inicio: at.data_inicio,
+                        rodando: (at.finalizada != 1)
                       }];
                     }
                     
                     renderUI({ 
                       logado: true, 
-                      tarefasEmAndamento, 
+                      tarefasEmAndamento: tarefas, 
                       usuario: data.data.usuario, 
                       feedback: {type:'success',msg:'Login realizado com sucesso!'},
                       boardData: boardData
