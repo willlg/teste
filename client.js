@@ -1,8 +1,6 @@
 console.log('client.js carregado');
 
 var ICON_BR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8dGV4dCB4PSI4IiB5PSIxMS41IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEuMjUiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJibGFjayIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QlI8L3RleHQ+Cjwvc3ZnPgo=';
-var ICON_PLAY = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cGF0aCBkPSJNNC41IDIuNXYxMWw5LTUuNXoiIGZpbGw9ImJsYWNrIi8+Cjwvc3ZnPgo=';
-var ICON_PAUSE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cmVjdCB4PSIzLjUiIHk9IjIuNSIgd2lkdGg9IjMiIGhlaWdodD0iMTEiIGZpbGw9ImJsYWNrIi8+CiAgPHJlY3QgeD0iOS41IiB5PSIyLjUiIHdpZHRoPSIzIiBoZWlnaHQ9IjExIiBmaWxsPSJibGFjayIvPgo8L3N2Zz4K';
 var INVISIBLE_ICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICA8cmVjdCB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9InRyYW5zcGFyZW50IiBvcGFjaXR5PSIwIi8+Cjwvc3ZnPg==';
 
 function checkDependencies() {
@@ -47,7 +45,36 @@ function initializePowerUp() {
         }
       }];
     },
-        
+    
+    'card-badges': function(t, options) {
+      console.log('[DEBUG] card-badges chamado');
+      
+      return t.get('member', 'private', 'brproject-token')
+        .then(function(token) {
+          if (token) {
+            return [{
+              dynamic: function() {
+                return {
+                  title: 'BRProject',
+                  color: null,
+                  refresh: 30,
+                  content: {
+                    type: 'iframe',
+                    url: t.signUrl(window.BRPROJECT_BASE_URL + '/card-list-badge.html'),
+                    height: 20
+                  }
+                };
+              }
+            }];
+          }
+          return [];
+        })
+        .catch(function(error) {
+          console.error('Erro ao obter badges do card:', error);
+          return [];
+        });
+    },
+    
     'card-back-section': function(t, options) {
       console.log('[DEBUG] card-back-section chamado');
       

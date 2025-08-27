@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-size: 11px;
+      height: 20px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    
+    .brproject-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 60px;
+      height: 18px;
+      border: none;
+      text-decoration: none;
+      gap: 4px;
+    }
+    
+    .brproject-badge-running {
+      background: #f44336;
+      color: white;
+      animation: pulse 2s infinite;
+    }
+    
+    .brproject-badge-play {
+      background: #0079bf;
+      color: white;
+    }
+    
+    .brproject-badge-play:hover {
+      background: #005a8b;
+      transform: scale(1.05);
+    }
+    
+    .brproject-badge-pause {
+      background: #f44336;
+      color: white;
+    }
+    
+    .brproject-badge-pause:hover {
+      background: #d32f2f;
+      transform: scale(1.05);
+    }
+    
+    .brproject-loading {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-top: 1px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    .brproject-icon {
+      width: 10px;
+      height: 10px;
+      display: inline-block;
+    }
+    
+    @keyframes pulse {
+      0% { 
+        opacity: 1; 
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+      }
+      70% { 
+        opacity: 0.8;
+        box-shadow: 0 0 0 8px rgba(244, 67, 54, 0);
+      }
+      100% { 
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+      }
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="running-badge" class="brproject-badge brproject-badge-running hidden">
+    <span class="brproject-icon">⏸️</span>
+    <span>Rodando</span>
+  </div>
+  
+  <button id="play-button" class="brproject-badge brproject-badge-play hidden">
+    <span class="brproject-icon">▶️</span>
+    <span>Iniciar</span>
+  </button>
+  
+  <button id="pause-button" class="brproject-badge brproject-badge-pause hidden">
+    <span class="brproject-icon">⏸️</span>
+    <span>Parar</span>
+  </button>
+  
+  <div id="loading-badge" class="brproject-badge brproject-badge-play">
+    <span class="brproject-loading"></span>
+    <span>...</span>
+  </div>
+
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <script src="config.js"></script>
+  <script src="vendor/jquery.min.js"></script>
+  <script src="vendor/md5.js"></script>
+  <script src="brproject.js"></script>
+  <script>
+    let t;
+    let cardId = null;
+    let brproject = null;
+    let isLoading = false;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      initializeBadge();
+    });
+
+    function initializeBadge() {
+      try {
+        t = window.TrelloPowerUp.iframe();
+        t.render(function() {
+          return initializeApp();
+        });
+      } catch (e) {
+        console.log('[DEBUG] Erro ao inicializar badge:', e);
+        setTimeout(initializeApp, 1000);
+      }
+    }
+
+    async function getUserData() {
+      try {
+        if (!t) return { token: null, url: null, usuario: null };
+        
+        const token = await t.get('member', 'private', 'brproject-token');
+        const url = await t.get('member', 'private', 'brproject-url');
+        const usuario = await t.get('member', 'private', 'brproject-usuario');
+        
+        return { token, url, usuario };
+      } catch (e) {
+        return { token: null, url: null, usuario: null };
+      }
+    }
+
+    async function getCardId() {
+      try {
+        if (!t) return null;
+        
+        const context = await t.getContext();
+        if (context && context.card) {
+          return context.card;
+        }
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function getCardData() {
+      try {
+        if (!t || !cardId) return null;
+        const card = await t.card('id', 'name', 'desc');
+        return card;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function showElement(elementId) {
+      document.querySelectorAll('.brproject-badge').forEach(el => {
+        el.classList.add('hidden');
+      });
+      
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.classList.remove('hidden');
+      }
+    }
+
+    function setLoading(loading) {
+      isLoading = loading;
+      if (loading) {
+        showElement('loading-badge');
+      }
+    }
+
+    async function checkTaskStatus() {
+      if (!brproject || !cardId) return false;
+      
+      return new Promise((resolve) => {
+        brproject.getUltimaTarefa({
+          success: function(data) {
+            if (data.success && 
+                data.data && 
+                data.data.atividade &&
+                data.data.atividade.finalizada != 1 && 
+                data.data.atividade.tarefa &&
+                data.data.atividade.tarefa.referencia_id == cardId) {
+              resolve(true);
+            } else {
+              resolve(false);
+            }
+          },
+          error: function(error) {
+            console.log('[DEBUG] Erro ao buscar tarefa:', error);
+            resolve(false);
+          }
+        });
+      });
+    }
+
+    function updateBadgeStatus(isRunning) {
+      if (isRunning) {
+        showElement('running-badge');
+      } else {
+        showElement('play-button');
+      }
+    }
+
+    async function startTask() {
+      if (!brproject || !cardId || isLoading) return;
+      
+      setLoading(true);
+      
+      try {
+        const cardData = await getCardData();
+        const tarefaNome = cardData && cardData.name ? cardData.name : 'Tarefa sem nome';
+        const tarefaDescricao = cardData && cardData.desc ? cardData.desc : '';
+        
+        const tarefa = { 
+          nome: tarefaNome,
+          descricao: tarefaDescricao,
+          referencia_id: cardId 
+        };
+        
+        brproject.iniciarTarefa(tarefa, {
+          success: function(data) {
+            setLoading(false);
+            if (data.success) {
+              updateBadgeStatus(true);
+              
+              if (t && t.alert) {
+                t.alert({
+                  message: 'Tarefa iniciada! ⏰',
+                  duration: 2000,
+                  display: 'info'
+                });
+              }
+              
+              setTimeout(() => {
+                if (window.parent && window.parent.postMessage) {
+                  window.parent.postMessage({
+                    type: 'brproject-task-started',
+                    cardId: cardId
+                  }, '*');
+                }
+              }, 500);
+            } else {
+              updateBadgeStatus(false);
+              if (t && t.alert) {
+                t.alert({
+                  message: 'Erro: ' + (data.message || 'Falha ao iniciar'),
+                  duration: 3000,
+                  display: 'error'
+                });
+              }
+            }
+          },
+          error: function(error) {
+            setLoading(false);
+            updateBadgeStatus(false);
+            if (t && t.alert) {
+              t.alert({
+                message: 'Erro ao iniciar tarefa',
+                duration: 3000,
+                display: 'error'
+              });
+            }
+          }
+        });
+      } catch (e) {
+        setLoading(false);
+        updateBadgeStatus(false);
+        if (t && t.alert) {
+          t.alert({
+            message: 'Erro inesperado',
+            duration: 3000,
+            display: 'error'
+          });
+        }
+      }
+    }
+
+    async function stopTask() {
+      if (!brproject || isLoading) return;
+      
+      setLoading(true);
+      
+      brproject.pararTarefa({
+        success: function(data) {
+          setLoading(false);
+          if (data.success) {
+            updateBadgeStatus(false);
+            
+            if (t && t.alert) {
+              t.alert({
+                message: 'Tarefa pausada! ⏸️',
+                duration: 2000,
+                display: 'info'
+              });
+            }
+            
+            setTimeout(() => {
+              if (window.parent && window.parent.postMessage) {
+                window.parent.postMessage({
+                  type: 'brproject-task-stopped',
+                  cardId: cardId
+                }, '*');
+              }
+            }, 500);
+          } else {
+            updateBadgeStatus(true);
+            if (t && t.alert) {
+              t.alert({
+                message: 'Erro: ' + (data.message || 'Falha ao parar'),
+                duration: 3000,
+                display: 'error'
+              });
+            }
+          }
+        },
+        error: function(error) {
+          setLoading(false);
+          updateBadgeStatus(true);
+          if (t && t.alert) {
+            t.alert({
+              message: 'Erro ao parar tarefa',
+              duration: 3000,
+              display: 'error'
+            });
+          }
+        }
+      });
+    }
+
+    async function initializeApp() {
+      try {
+        if (typeof Brproject === 'undefined') {
+          setTimeout(initializeApp, 500);
+          return;
+        }
+
+        brproject = new Brproject();
+        cardId = await getCardId();
+        
+        if (!cardId) {
+          showElement('loading-badge');
+          document.getElementById('loading-badge').innerHTML = '<span>❌</span><span>Erro</span>';
+          return;
+        }
+
+        const { token, url } = await getUserData();
+        const isLoggedIn = !!token && !!url;
+        
+        if (!isLoggedIn) {
+          showElement('loading-badge');
+          document.getElementById('loading-badge').innerHTML = '<span>🔒</span><span>Desconectado</span>';
+          return;
+        }
+        
+        brproject.token = token;
+        brproject.url = url;
+
+        const isRunning = await checkTaskStatus();
+        updateBadgeStatus(isRunning);
+
+        document.getElementById('play-button').addEventListener('click', startTask);
+        document.getElementById('pause-button').addEventListener('click', stopTask);
+        document.getElementById('running-badge').addEventListener('click', stopTask);
+        
+        setInterval(async () => {
+          if (!isLoading) {
+            const currentStatus = await checkTaskStatus();
+            updateBadgeStatus(currentStatus);
+          }
+        }, 30000);
+        
+      } catch (e) {
+        console.error('[DEBUG] Erro na inicialização:', e);
+        showElement('loading-badge');
+        document.getElementById('loading-badge').innerHTML = '<span>❌</span><span>Erro</span>';
+      }
+    }
+
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type) {
+        if (event.data.type === 'brproject-task-started' || 
+            event.data.type === 'brproject-task-stopped') {
+          
+          if (event.data.cardId !== cardId && !isLoading) {
+            setTimeout(async () => {
+              const currentStatus = await checkTaskStatus();
+              updateBadgeStatus(currentStatus);
+            }, 1000);
+          }
+        }
+      }
+    });
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeBadge);
+    } else {
+      initializeBadge();
+    }
+  </script>
+</body>
+</html>
